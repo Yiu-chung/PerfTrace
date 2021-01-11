@@ -3,7 +3,8 @@
 /* Output the raw data */
 void print_raw_data(struct Raw_Res * res, int tot){
 	printf("SSN       RSN       Delay1    Delay2    RTT\n");
-	for(int i = 0; i < tot; i++){
+	int i;
+	for(i = 0; i < tot; i++){
 		printf("%-10d%-10d%-10.3f%-10.3f%-10.3f\n", i+1, res[i].RSN % 10000, (res[i].Rcv_time-res[i].Send_time)/1000.0, (res[i].Reply_time-res[i].Rcv_time)/1000.0, (res[i].Reply_time-res[i].Send_time)/1000.0);
 	}
 }
@@ -103,7 +104,8 @@ void loss_rate_calc(struct Raw_Res * res, int tot){
 	tw_loss_rate = ow_loss_rate1 = ow_loss_rate2 = 0.0;
 	int ssn_max, rsn_max, reply_cnt;
 	ssn_max = rsn_max = reply_cnt = 0;
-	for(int i = 0; i < tot; i++){
+	int i;
+	for(i = 0; i < tot; i++){
 		if(res[i].SSN != 0){
 			reply_cnt ++;
 			ssn_max = max(res[i].SSN , ssn_max);
