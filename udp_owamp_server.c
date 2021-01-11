@@ -66,6 +66,6 @@ int main(int argc, char **argv)
 		reply_pkt->Rcv_time = tv.tv_sec * 1000000 + tv.tv_usec;
 		reply_pkt->RSN = get_pkt_cnt(probe_pkt->ID, (probe_pkt->SSN)/10000);
 		Sendto(sockfd, buff, sizeof(struct Reply_Pkt), 0, (SA *)&cliaddr, len);
-		printf("datagram from %s\n", Sock_ntop((SA *)&cliaddr, len));
+		printf("reply_pkt->ID : datagram from %s\n", Sock_ntop((SA *)&cliaddr, len));
 	}
 }
