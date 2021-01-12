@@ -46,7 +46,7 @@ void delay_calc(struct Raw_Res * res, int tot){
 	}else{
 		printf("Two way delay:\n");
 		printf("    min/aver/max = %.3f/%.3f/%.3f ms\n",tw[0]/1000.0, tw[1]/1000.0/cnt, tw[2]/1000.0);
-		printf("Owe way delay:\n");
+		printf("One way delay:\n");
 		printf("    Source->Dest: min/aver/max = %.3f/%.3f/%.3f ms\n",ow1[0]/1000.0, ow1[1]/1000.0/cnt, ow1[2]/1000.0);
 		printf("    Dest->Source: min/aver/max = %.3f/%.3f/%.3f ms\n",ow2[0]/1000.0, ow2[1]/1000.0/cnt, ow2[2]/1000.0);
 	}
