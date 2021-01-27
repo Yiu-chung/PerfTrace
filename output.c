@@ -54,10 +54,11 @@ void delay_calc(struct Raw_Res * res, int tot){
 
 
 /* Calculate one_way jitter and two_way jitter using raw data */
+/* According to rfc1889 : https://www.ietf.org/rfc/rfc1889.txt */
 void jitter_calc(struct Raw_Res * res, int tot){
 	int cnt = 0;
 	float twj, owj1, owj2;
-	twj = owj1 = owj2 = 0.0;
+	twj = owj1 = owj2 = -1.0;
 	int pre_tw, pre_ow1, pre_ow2;
 	int i=0;
 	while(i < tot && res[i].SSN == 0){
@@ -73,22 +74,29 @@ void jitter_calc(struct Raw_Res * res, int tot){
 	if(cnt){
 		for(; i<tot; i++){
 			if(res[i].SSN){
-				twj += abs((int)(res[i].Reply_time-res[i].Send_time) - pre_tw);
-				owj1 += abs((int)(res[i].Rcv_time-res[i].Send_time) - pre_ow1);
-				owj2 += abs((int)(res[i].Reply_time-res[i].Rcv_time) - pre_ow2);
+				cnt ++;
+				if(twj < -0.9){
+					twj = abs((int)(res[i].Reply_time-res[i].Send_time) - pre_tw);
+					owj1 = abs((int)(res[i].Rcv_time-res[i].Send_time) - pre_ow1);
+					owj2 = abs((int)(res[i].Reply_time-res[i].Rcv_time) - pre_ow2);
+				}else{
+					// J=J+(|D(i-1,i)|-J)/16
+					twj = twj + (abs((int)(res[i].Reply_time-res[i].Send_time) - pre_tw) - twj)/16.0;
+					owj1 = owj1 + (abs((int)(res[i].Rcv_time-res[i].Send_time) - pre_ow1) - owj1)/16.0;
+					owj2 = owj2 + (abs((int)(res[i].Reply_time-res[i].Rcv_time) - pre_ow2) - owj2)/16.0;
+				}
 				pre_tw = res[i].Reply_time-res[i].Send_time;
 				pre_ow1 = res[i].Rcv_time-res[i].Send_time;
 				pre_ow2 = res[i].Reply_time-res[i].Rcv_time;
-				cnt ++;
 			}
 		}
 	}
 	if(cnt>1){
 		printf("Two way jitter:\n");
-		printf("    %.3f ms\n", twj/(cnt*1000.0-1000.0));
+		printf("    %.3f ms\n", twj/1000.0);
 		printf("One way jitter:\n");
-		printf("    Source->Dest: %.3f ms\n", owj1/(cnt*1000.0-1000.0));
-		printf("    Dest->Source: %.3f ms\n", owj2/(cnt*1000.0-1000.0));
+		printf("    Source->Dest: %.3f ms\n", owj1/1000.0);
+		printf("    Dest->Source: %.3f ms\n", owj2/1000.0);
 	}
 
 }
