@@ -57,6 +57,8 @@ int main(int argc, char **argv)
 		sockfd = Udp_server_reuseaddr(argv[1], argv[2], NULL);
 	else
 		err_quit("usage: daytimeudpsrv [ <host> ] <service or port>");
+	int nRecvBuf=200*1024; //set 200KB rcv buff
+	setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF,(const char*)&nRecvBuf,sizeof(int));
 	struct Probe_Pkt * probe_pkt = buff;
 	struct Reply_Pkt * reply_pkt = buff;
 	for ( ; ; ) {
