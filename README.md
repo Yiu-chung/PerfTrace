@@ -24,6 +24,7 @@ cd udp_owamp; make
 &emsp;cent-os$ firewall-cmd --reload
     
 ### client
+##### mode1
 
 ./udp_owamp_client server_addr 19999 或者 ./udp_owamp_server server_addr 19999 -c 10 -i 10
 
@@ -31,6 +32,11 @@ cd udp_owamp; make
 
 -i:指定发包间隔，默认为100ms
 
+##### mode2 测带宽模式
+
+./udp_owamp_client server_addr 19999 -b true
+
+注：带宽模式每次需消耗较多流量（每次0.1MB），对系统有较大入侵性。当前带宽模式测得的带宽值只能反映相对大小，不能代表确切的可用带宽值。
 
 # Output Example
 ![image](https://github.com/LiuNotTwo/udp_owamp/blob/main/example/figs/output_example.PNG)
