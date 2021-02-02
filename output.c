@@ -211,10 +211,10 @@ void abw_calc(struct Raw_Res * res, int tot, int probe_size){
 		}
 	}
 	float ow1_loss_rate = loss_rate_calc(res, tot);
-	printf("%ld  %.3f\n",max_rcvtime-min_rcvtime, (float)(max_rcvtime-min_rcvtime));
+	//printf("%ld  %.3f\n",max_rcvtime-min_rcvtime, (float)(max_rcvtime-min_rcvtime));
 	if(cnt > 1){
 		printf("Available bandwidth:\n");
-		printf("    %.3f bps\n", (cnt-1)*probe_size*8*1000000.0/(float)(max_rcvtime-min_rcvtime)*(1.0-ow1_loss_rate));
+		printf("    %.3f bps\n", (cnt-1)*probe_size*8*1000000.0/(float)(max_rcvtime-min_rcvtime)*(1.0-ow1_loss_rate)/(tot*ow1_loss_rate+1.0));
 	}
 
 }
