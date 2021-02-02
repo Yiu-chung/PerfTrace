@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 		}
 		sockfd = Udp_connect(argv[1], argv[2]);
 	}else{
-		err_quit("usage: daytimeudpcli2 <hostname/IPaddress> <service/port#> [-c count] [-i interval/ms]");
+		err_quit("usage: daytimeudpcli2 <hostname/IPaddress> <service/port#> [-c count] [-i interval/ms]\n\tOr daytimeudpcli2 <hostname/IPaddress> <service/port#> [-b true]");
 	}
 	sockfd = Udp_connect(argv[1], argv[2]);
 	gettimeofday(&tv_id, NULL);
