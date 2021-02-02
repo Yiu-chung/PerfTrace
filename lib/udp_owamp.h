@@ -17,6 +17,7 @@
 #include	<arpa/inet.h>
 #include 	<netdb.h>
 #include	<sys/un.h>
+#include	<limits.h>
 
 #define MAXLINE	4096
 #define	SA	struct sockaddr
