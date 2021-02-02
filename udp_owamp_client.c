@@ -8,6 +8,7 @@ char sendline[MAXLINE], rcvline[MAXLINE];  // Package content
 int pkt_num;   // The number of packets sent in the detection
 long RAND_ID;  // Each detection task has a unique ID 
 int interval;  // Packet sending interval (ms)
+int add_size = 0;
 
 /*
  * struct timeval
@@ -45,7 +46,7 @@ void * send_pkt(void * send_sd){
 		send_time = tv.tv_sec * 1000000 + tv.tv_usec;
 		probe_pkt->Send_time = send_time;
 		probe_pkt->SSN = pkt_num*10000 + i + 1;
-		write(sd, sendline, sizeof(struct Probe_Pkt));	/* send probe datagram */
+		write(sd, sendline, sizeof(struct Probe_Pkt)+add_size);	/* send probe datagram */
 		if(interval && i+1<pkt_num){
 			ms_sleep(interval);
 		}
@@ -78,13 +79,13 @@ int main(int argc, char **argv)
 	struct timeval tv_id;
 	pkt_num = 10;
 	interval = 100;
+	char *c_val = "10", *i_val = "100", *b_val = "false";
 	if (argc == 3){
 		sockfd = Udp_connect(argv[1], argv[2]);
 	}else if(argc == 5 || argc == 7){
-		char *c_val = "10", *i_val = "100";
 		int opt, flags;
 		flags = 0;
-		char *optstring = "c:i:";
+		char *optstring = "c:i:b:";
 		while ((opt = getopt(argc-2, argv+2, optstring)) != -1) {
 			switch(opt) {
 				case 'c':
@@ -93,14 +94,22 @@ int main(int argc, char **argv)
 				case 'i':
 					i_val = optarg;
 					break;
+				case 'b':
+					b_val = optarg;
+					break;
 				default:
 					break;
 
 			}
 		}
-		
 		pkt_num = atoi(c_val);
 		interval = atoi(i_val);
+		add_size = 0;
+		if(b_val[0] == 'T' || b_val[0] == 't'){
+			pkt_num = 100;
+			interval = 0;
+			add_size = 1000;
+		}
 		if(pkt_num > 1000){
 			err_quit("error: count should be smaller than 1000");
 		}
@@ -134,6 +143,10 @@ int main(int argc, char **argv)
 	jitter_calc(raw_res, pkt_num);
 	printf("===============================================\n");
 	loss_rate_calc(raw_res, pkt_num);
+	printf("===============================================\n");
+	if(b_val[0] == 'T' || b_val[0] == 't'){
+		abw_calc(raw_res, pkt_num, add_size + 24);
+	}
 	exit(0);
 }
 
