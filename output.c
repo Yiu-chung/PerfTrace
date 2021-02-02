@@ -190,4 +190,25 @@ void loss_rate_calc(struct Raw_Res * res, int tot){
 	}
 }
 
+/* Calculate available bandwidth */
+void abw_calc(struct Raw_Res * res, int tot, int probe_size){
+	int i;
+	//long min_sendtime = LONG_MAX;
+	long min_rcvtime = LONG_MAX;
+	long max_rcvtime = 0;
+	int cnt = 0;
+	for(i = 0; i < tot; i ++){
+		if(res[i].SSN != 0){
+			cnt ++;
+			//min_sendtime = min(min_sendtime, res[i].Send_time);
+			min_rcvtime = min(min_rcvtime, res[i].Rcv_time);
+			max_rcvtime = max(max_rcvtime, res[i].Rcv_time);
+		}
+	}
+	printf("%ld  %.3f\n",max_rcvtime-min_rcvtime, (float)(max_rcvtime-min_rcvtime));
+	if(cnt > 1){
+		printf("Available bandwidth:\n");
+		printf("    %.3f bps\n", (cnt-1)*probe_size*8*1000000.0/(float)(max_rcvtime-min_rcvtime)/(float)(tot-cnt+1));
+	}
 
+}
