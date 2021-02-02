@@ -143,7 +143,7 @@ void jitter_calc(struct Raw_Res * res, int tot){
 }
 
 /* Calculate one_way loss rate and two_way loss rate using raw data */
-void loss_rate_calc(struct Raw_Res * res, int tot){
+float loss_rate_calc(struct Raw_Res * res, int tot){
 	void print_loss_rate(float tw, float ow1, float ow2){
 		printf("Two way packet loss rate:\n    %-4.2f%%\n",tw*100);
 		printf("One way packet loss rate:\n");
@@ -154,6 +154,7 @@ void loss_rate_calc(struct Raw_Res * res, int tot){
 	int ssn_max, rsn_max, reply_cnt;
 	ssn_max = rsn_max = reply_cnt = 0;
 	int i;
+	float ow1_res = 0.0;
 	for(i = 0; i < tot; i++){
 		if(res[i].SSN != 0){
 			reply_cnt ++;
@@ -177,17 +178,21 @@ void loss_rate_calc(struct Raw_Res * res, int tot){
 		if((loss_num1 == 0) && (loss_num2 == 0)){
 			tmp_val = 1.0 - sqrt(1.0-tw_loss_rate);
 			print_loss_rate(tw_loss_rate, tmp_val, tmp_val);
+			ow1_res = tmp_val;
 		}else if(loss_num1 == 0){
 			print_loss_rate(tw_loss_rate, 0.0, tw_loss_rate);
 		}else if(loss_num2 == 0){
 			print_loss_rate(tw_loss_rate, tw_loss_rate, 0.0);
+			ow1_res = tw_loss_rate;
 		}else{
 			/* tw_loss_rate = 1 - (1 - k * ow_loss_rate1) * (1 - k * ow_loss_rate2)  */
 			tmp_val = sqrt((ow_loss_rate1+ow_loss_rate2)*(ow_loss_rate1+ow_loss_rate2) - 4*tw_loss_rate*ow_loss_rate1*ow_loss_rate2);
 			float k = (ow_loss_rate1 + ow_loss_rate2 - tmp_val)/(2*ow_loss_rate1*ow_loss_rate2);
 			print_loss_rate(tw_loss_rate, ow_loss_rate1*k, ow_loss_rate2*k);
+			ow1_res = ow_loss_rate1*k;
 		}
 	}
+	return ow1_res;
 }
 
 /* Calculate available bandwidth */
@@ -205,10 +210,11 @@ void abw_calc(struct Raw_Res * res, int tot, int probe_size){
 			max_rcvtime = max(max_rcvtime, res[i].Rcv_time);
 		}
 	}
+	float ow1_loss_rate = loss_rate_calc(res, tot);
 	printf("%ld  %.3f\n",max_rcvtime-min_rcvtime, (float)(max_rcvtime-min_rcvtime));
 	if(cnt > 1){
 		printf("Available bandwidth:\n");
-		printf("    %.3f bps\n", (cnt-1)*probe_size*8*1000000.0/(float)(max_rcvtime-min_rcvtime)/(float)(tot-cnt+1));
+		printf("    %.3f bps\n", (cnt-1)*probe_size*8*1000000.0/(float)(max_rcvtime-min_rcvtime)*(1.0-ow1_loss_rate));
 	}
 
 }
