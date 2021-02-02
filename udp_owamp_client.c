@@ -121,6 +121,8 @@ int main(int argc, char **argv)
 		err_quit("usage: udp_owamp_client <hostname/IPaddress> <service/port#> [-c count] [-i interval/ms]\n\tOr: udp_owamp_client <hostname/IPaddress> <service/port#> [-b true]");
 	}
 	sockfd = Udp_connect(argv[1], argv[2]);
+	int nZero=0; //set 0 send buff
+	setsockopt(sockfd, SOL_SOCKET,SO_SNDBUF, (char *)&nZero,sizeof(nZero));
 	gettimeofday(&tv_id, NULL);
 	RAND_ID = tv_id.tv_sec * 1000000 + tv_id.tv_usec;
 	pthread_t send_t, rcv_t;
