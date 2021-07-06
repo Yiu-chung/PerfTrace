@@ -44,6 +44,7 @@ void * send_pkt(void * send_sd){
 	for(i=0; i<pkt_num; i++){
 		gettimeofday(&tv, NULL);
 		send_time = tv.tv_sec * 1000000 + tv.tv_usec;
+		printf("time: %ld\n",send_time);
 		probe_pkt->Send_time = send_time;
 		probe_pkt->SSN = pkt_num*10000 + i + 1;
 		write(sd, sendline, sizeof(struct Probe_Pkt)+add_size);	/* send probe datagram */
