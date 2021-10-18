@@ -8,7 +8,7 @@ char sendline[MAXLINE], rcvline[MAXLINE];  // Package content
 int pkt_num;   // The number of packets sent in the detection
 long RAND_ID;  // Each detection task has a unique ID 
 int interval;  // Packet sending interval (ms)
-int add_size = 0;
+int psize = 0;
 
 /*
  * struct timeval
@@ -25,11 +25,11 @@ int add_size = 0;
 /* struct Raw_Res: raw data obtained by measurement */
 struct Raw_Res raw_res[1000];
 
-void ms_sleep(int ms)
+void us_sleep(int us)
 {
 	struct timeval ST;
-	ST.tv_sec    = 0;
-	ST.tv_usec   = ms*1000;
+	ST.tv_sec    = us / 1000000;
+	ST.tv_usec   = us;
 	select(0, NULL, NULL, NULL, &ST);
 }
 
@@ -45,10 +45,11 @@ void * send_pkt(void * send_sd){
 		gettimeofday(&tv, NULL);
 		send_time = tv.tv_sec * 1000000 + tv.tv_usec;
 		probe_pkt->Send_time = send_time;
-		probe_pkt->SSN = pkt_num*10000 + i + 1;
-		write(sd, sendline, sizeof(struct Probe_Pkt)+add_size);	/* send probe datagram */
+		probe_pkt->TOT = pkt_num;
+		probe_pkt->SSN = i + 1;
+		write(sd, sendline, max(sizeof(struct Probe_Pkt), psize));	/* send probe datagram */
 		if(interval && i+1<pkt_num){
-			ms_sleep(interval);
+			us_sleep(interval);
 		}
 	}
 }
@@ -62,15 +63,17 @@ void * rcv_pkt(void * rcv_sd){
 	struct timeval tv;
 	for(; ; ){
 		read(sd, rcvline, MAXLINE);             /* receive reply datagram */
-		SN = (reply_pkt->SSN) % 10000 - 1;
+		SN = reply_pkt->SSN - 1;
+		gettimeofday(&tv, NULL); 
+		raw_res[SN].Reply_time = tv.tv_sec * 1000000 + tv.tv_usec;
 		raw_res[SN].Send_time = reply_pkt->Send_time;
 		raw_res[SN].Rcv_time = reply_pkt->Rcv_time;
-		gettimeofday(&tv, NULL);
-		raw_res[SN].Reply_time = tv.tv_sec * 1000000 + tv.tv_usec;
+		raw_res[SN].TOT = reply_pkt->TOT;
 		raw_res[SN].SSN = reply_pkt->SSN;
 		raw_res[SN].RSN = reply_pkt->RSN;
 	}
 }
+
 
 int main(int argc, char **argv)
 {
@@ -79,13 +82,13 @@ int main(int argc, char **argv)
 	struct timeval tv_id;
 	pkt_num = 10;
 	interval = 100;
-	char *c_val = "10", *i_val = "100", *b_val = "false";
+	char *c_val = "10", *i_val = "100", *l_val = "0", *b_val = "false";
 	if (argc == 3){
 		sockfd = Udp_connect(argv[1], argv[2]);
-	}else if(argc == 5 || argc == 7){
+	}else if(argc == 5 || argc == 7 || argc == 9){
 		int opt, flags;
 		flags = 0;
-		char *optstring = "c:i:b:";
+		char *optstring = "c:i:l:b:";
 		while ((opt = getopt(argc-2, argv+2, optstring)) != -1) {
 			switch(opt) {
 				case 'c':
@@ -93,6 +96,9 @@ int main(int argc, char **argv)
 					break;
 				case 'i':
 					i_val = optarg;
+					break;
+				case 'l':
+					l_val = optarg;
 					break;
 				case 'b':
 					b_val = optarg;
@@ -104,21 +110,21 @@ int main(int argc, char **argv)
 		}
 		pkt_num = atoi(c_val);
 		interval = atoi(i_val);
-		add_size = 0;
-		if(b_val[0] == 'T' || b_val[0] == 't'){
+		psize = atoi(l_val);
+		/* if(b_val[0] == 'T' || b_val[0] == 't'){
 			pkt_num = 100;
 			interval = 0;
-			add_size = 1000;
-		}
+			psize = 1000;
+		} */
 		if(pkt_num > 1000){
 			err_quit("error: count should be smaller than 1000");
 		}
-		if(pkt_num * interval>20000){
+		if(pkt_num * interval>20000000){
 			err_quit("error: count*interval should be smaller than 20000");
 		}
 		sockfd = Udp_connect(argv[1], argv[2]);
 	}else{
-		err_quit("usage: udp_owamp_client <hostname/IPaddress> <service/port#> [-c count] [-i interval/ms]\n\tOr: udp_owamp_client <hostname/IPaddress> <service/port#> [-b true]");
+		err_quit("usage: udp_owamp_client <hostname/IPaddress> <service/port#> [-c count] [-i interval/us] [-l probe_pkt size]\n\tOr: udp_owamp_client <hostname/IPaddress> <service/port#> [-b true]");
 	}
 	sockfd = Udp_connect(argv[1], argv[2]);
 	int nZero=0; //set 0 send buff
@@ -128,9 +134,9 @@ int main(int argc, char **argv)
 	pthread_t send_t, rcv_t;
 
 	// Create the sending thread and receiving thread
-	pthread_create(&send_t, NULL, send_pkt, &sockfd);
 	pthread_create(&rcv_t, NULL, rcv_pkt, &sockfd);
-	ms_sleep(interval * pkt_num + 1000);
+	pthread_create(&send_t, NULL, send_pkt, &sockfd);
+	us_sleep(interval * pkt_num + 1000000);
 
 	// Kill the sending thread and receiving thread
 	pthread_cancel(send_t);
@@ -147,7 +153,7 @@ int main(int argc, char **argv)
 	loss_rate_calc(raw_res, pkt_num);
 	printf("===============================================\n");
 	if(b_val[0] == 'T' || b_val[0] == 't'){
-		abw_calc(raw_res, pkt_num, add_size + 24);
+		abw_calc(raw_res, pkt_num, psize);
 	}
 	exit(0);
 }

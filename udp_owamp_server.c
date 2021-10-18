@@ -34,13 +34,13 @@ int get_pkt_cnt(long id, int tot){
 		pkt_cnt[idx].ID = id;
 		pkt_cnt[idx].Tot = tot;
 		pkt_cnt[idx].Cnt = 1;
-		return tot*10000 + 1;
+		return 1;
 	}else{
 		pkt_cnt[idx].Cnt ++;
 		if(pkt_cnt[idx].Cnt == tot){
 			pkt_cnt[idx].ID = 0;
 		}
-		return tot*10000 + pkt_cnt[idx].Cnt;
+		return pkt_cnt[idx].Cnt;
 	}
 }
 
@@ -56,8 +56,8 @@ int main(int argc, char **argv)
 	else if (argc == 3)
 		sockfd = Udp_server_reuseaddr(argv[1], argv[2], NULL);
 	else
-		err_quit("usage: daytimeudpsrv [ <host> ] <service or port>");
-	int nRecvBuf=200*1024; //set 200KB rcv buff
+		err_quit("usage: udp_owamp_server [ <host> ] <service or port>");
+	int nRecvBuf=1024*1024; //set 1MB rcv buff
 	setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF,(const char*)&nRecvBuf,sizeof(int));
 	struct Probe_Pkt * probe_pkt = buff;
 	struct Reply_Pkt * reply_pkt = buff;
@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 		n = Recvfrom(sockfd, buff, MAXLINE, 0, (SA *)&cliaddr, &len);
 		gettimeofday(&tv, NULL);
 		reply_pkt->Rcv_time = tv.tv_sec * 1000000 + tv.tv_usec;
-		reply_pkt->RSN = get_pkt_cnt(probe_pkt->ID, (probe_pkt->SSN)/10000);
+		reply_pkt->RSN = get_pkt_cnt(probe_pkt->ID, probe_pkt->TOT);
 		Sendto(sockfd, buff, sizeof(struct Reply_Pkt), 0, (SA *)&cliaddr, len);
 		printf("%ld : datagram from %s\n", reply_pkt->ID, Sock_ntop((SA *)&cliaddr, len));
 	}

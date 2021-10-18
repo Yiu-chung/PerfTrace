@@ -2,10 +2,10 @@
 
 /* Output the raw data */
 void print_raw_data(struct Raw_Res * res, int tot){
-	printf("SSN       RSN       Delay1    Delay2    RTT\n");
+	printf("SSN       RSN       Delay1    Delay2    RTT       Send_time           Rcv_time            Reply_time\n");
 	int i;
 	for(i = 0; i < tot; i++){
-		printf("%-10d%-10d%-10.3f%-10.3f%-10.3f\n", i+1, res[i].RSN % 10000, (res[i].Rcv_time-res[i].Send_time)/1000.0, (res[i].Reply_time-res[i].Rcv_time)/1000.0, (res[i].Reply_time-res[i].Send_time)/1000.0);
+		printf("%-10d%-10d%-10.3f%-10.3f%-10.3f%-20ld%-20ld%-20ld\n", i+1, res[i].RSN, (res[i].Rcv_time-res[i].Send_time)/1000.0, (res[i].Reply_time-res[i].Rcv_time)/1000.0, (res[i].Reply_time-res[i].Send_time)/1000.0,res[i].Send_time, res[i].Rcv_time, res[i].Reply_time);
 	}
 }
 

@@ -19,7 +19,7 @@
 #include	<sys/un.h>
 #include	<limits.h>
 
-#define MAXLINE	4096
+#define MAXLINE	65536
 #define	SA	struct sockaddr
 
 /* Probe packet structure */
@@ -27,6 +27,7 @@ struct Probe_Pkt
 {
 	long ID;
 	long Send_time;
+	int TOT;
 	int SSN;
 };
 
@@ -35,6 +36,7 @@ struct Reply_Pkt
 {
 	long ID;
 	long Send_time;
+	int TOT;
 	int SSN;
 	long Rcv_time;
 	int RSN;
@@ -46,6 +48,7 @@ struct Raw_Res
 	long Send_time;
 	long Rcv_time;
 	long Reply_time;
+	int TOT;
 	int SSN;
 	int RSN;
 };
