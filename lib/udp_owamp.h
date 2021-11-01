@@ -10,6 +10,7 @@
 #include	<stdlib.h>	
 #include	<string.h>	
 #include	<unistd.h>	
+#include	<getopt.h>
 #include	<errno.h>		/* for definition of errno */
 #include	<stdarg.h>		/* ANSI C header file */
 #include 	<sys/socket.h>
@@ -19,8 +20,13 @@
 #include	<sys/un.h>
 #include	<limits.h>
 
-#define MAXLINE	65536
+#define MAXLINE	1600
 #define	SA	struct sockaddr
+
+const long KILO_RATE_UNIT = 1000;
+const long MEGA_RATE_UNIT = 1000 * 1000;
+const long GIGA_RATE_UNIT = 1000 * 1000 * 1000;
+
 
 /* Probe packet structure */
 struct Probe_Pkt

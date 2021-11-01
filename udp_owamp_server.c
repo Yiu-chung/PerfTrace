@@ -61,13 +61,20 @@ int main(int argc, char **argv)
 	setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF,(const char*)&nRecvBuf,sizeof(int));
 	struct Probe_Pkt * probe_pkt = buff;
 	struct Reply_Pkt * reply_pkt = buff;
+	FILE *fp = fopen("./file1.txt", "a+");
 	for ( ; ; ) {
 		len = sizeof(cliaddr);
 		n = Recvfrom(sockfd, buff, MAXLINE, 0, (SA *)&cliaddr, &len);
 		gettimeofday(&tv, NULL);
 		reply_pkt->Rcv_time = tv.tv_sec * 1000000 + tv.tv_usec;
 		reply_pkt->RSN = get_pkt_cnt(probe_pkt->ID, probe_pkt->TOT);
-		Sendto(sockfd, buff, sizeof(struct Reply_Pkt), 0, (SA *)&cliaddr, len);
-		printf("%ld : datagram from %s\n", reply_pkt->ID, Sock_ntop((SA *)&cliaddr, len));
+		/* write to file! */
+		char *res = (char *) malloc(256);
+		sprintf(res, "%ld,%d,%d,%d,%ld,%ld\n", \
+		reply_pkt->ID,reply_pkt->TOT,reply_pkt->RSN,reply_pkt->SSN,reply_pkt->Send_time,reply_pkt->Rcv_time);
+		fputs(res, fp);
+    	fflush(fp);
+		//Sendto(sockfd, buff, sizeof(struct Reply_Pkt), 0, (SA *)&cliaddr, len);
+		//printf("%ld : datagram from %s\n", reply_pkt->ID, Sock_ntop((SA *)&cliaddr, len));
 	}
 }
