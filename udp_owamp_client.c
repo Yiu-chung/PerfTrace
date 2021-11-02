@@ -171,7 +171,7 @@ int main(int argc, char **argv)
 	pthread_cancel(rcv_t);
 
 	close(sockfd);
-
+	/*
 	print_raw_data(raw_res, pkt_num);
 	printf("===============================================\n");
 	delay_calc(raw_res, pkt_num);
@@ -182,7 +182,7 @@ int main(int argc, char **argv)
 	printf("===============================================\n");
 	if(m_val == 2){
 		abw_calc(raw_res, pkt_num, psize);
-	}
+	}*/
 	exit(0);
 }
 
