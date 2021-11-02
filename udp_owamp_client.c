@@ -55,6 +55,7 @@ void * send_pkt(void * send_sd){
 			wait_time = interval * i - (int)(cur_time - start_time);
 			if (wait_time > 0) us_sleep(wait_time);
 		}else if(meas_mode == 2){
+			if(duration < cur_time-start_time) break;
 			wait_time = (int)(duration * i/(pkt_num - 1)) - (int)(cur_time - start_time);
 			if (wait_time > 0) us_sleep(wait_time);
 		}
@@ -137,7 +138,7 @@ int main(int argc, char **argv)
 		rate = rate_atof(r_val);
 		duration = duration_atoi(d_val);
 		if (meas_mode == 2 && psize == 0) psize = 1400;
-		pkt_num = (int)(duration * rate / 1000000 / psize);
+		pkt_num = (int)(duration * rate / 8 / 1000000 / psize);
 
 		if(meas_mode == 1 && pkt_num > 1000){
 			err_quit("error: count should be smaller than 1000 in basic mode");
