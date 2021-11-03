@@ -15,7 +15,7 @@ int main(int argc, char **argv)
 
 	if ( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 		err_sys("socket error");
-
+	printf("OK1\n");
 	bzero(&servaddr, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port   = htons(19999);	/* daytime server */
