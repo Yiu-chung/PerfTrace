@@ -21,6 +21,7 @@
 #include	<limits.h>
 
 #define MAXLINE	1600
+#define	LISTENQ 1024
 #define	SA	struct sockaddr
 
 const long KILO_RATE_UNIT = 1000;
