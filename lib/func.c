@@ -1,5 +1,13 @@
 #include "udp_owamp.h"
 
+void us_sleep(int us)
+{
+	struct timeval ST;
+	ST.tv_sec    = us / 1000000;
+	ST.tv_usec   = us;
+	select(0, NULL, NULL, NULL, &ST);
+}
+
 double    rate_atof(const char *s)
     {
 	double    n;

@@ -19,14 +19,25 @@
 #include 	<netdb.h>
 #include	<sys/un.h>
 #include	<limits.h>
+#include	<sys/mman.h>    /* for mmap */
 
 #define MAXLINE	1600
 #define	LISTENQ 1024
+#define MAXPKT	2048
 #define	SA	struct sockaddr
 
 const long KILO_RATE_UNIT = 1000;
 const long MEGA_RATE_UNIT = 1000 * 1000;
 const long GIGA_RATE_UNIT = 1000 * 1000 * 1000;
+
+/* Task Metadata */
+struct Task_Meta
+{
+	long ID;
+	int pkt_num;
+	int duration; // unit: us
+	int task_mode; // 1-basic; 2-ABM.
+};
 
 
 /* Probe packet structure */
@@ -58,6 +69,12 @@ struct Raw_Res
 	int TOT;
 	int SSN;
 	int RSN;
+};
+
+struct OWD_list
+{
+	int SSN;
+	int owd;
 };
 
 #define	min(a,b)	((a) < (b) ? (a) : (b))

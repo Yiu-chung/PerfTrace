@@ -1,5 +1,14 @@
 #include "udp_owamp.h"
 
+pid_t
+Fork(void)
+{
+	pid_t	pid;
+
+	if ( (pid = fork()) == -1)
+		err_sys("fork error");
+	return(pid);
+}
 
 void
 Bind(int fd, const struct sockaddr *sa, socklen_t salen)

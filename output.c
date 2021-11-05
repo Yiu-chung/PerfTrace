@@ -143,60 +143,32 @@ void jitter_calc(struct Raw_Res * res, int tot){
 }
 
 /* Calculate one_way loss rate and two_way loss rate using raw data */
-float loss_rate_calc(struct Raw_Res * res, int tot){
-	void print_loss_rate(float tw, float ow1, float ow2){
+float loss_rate_calc(struct Raw_Res * res, int tot, int received){
+	void print_loss_rate(float tw, float ow1, float ow2) 
+	{
 		printf("Two way packet loss rate:\n    %-4.2f%%\n",tw*100);
 		printf("One way packet loss rate:\n");
 		printf("    Source->Dest: %-4.2f%%\n    Dest->Source: %-4.2f%%\n", ow1*100, ow2*100);
 	}
 	float tw_loss_rate, ow_loss_rate1, ow_loss_rate2;
 	tw_loss_rate = ow_loss_rate1 = ow_loss_rate2 = 0.0;
-	int ssn_max, rsn_max, reply_cnt;
-	ssn_max = rsn_max = reply_cnt = 0;
+	int reply_cnt;
+	reply_cnt = 0;
 	int i;
-	float ow1_res = 0.0;
 	for(i = 0; i < tot; i++){
 		if(res[i].SSN != 0){
 			reply_cnt ++;
-			ssn_max = max(res[i].SSN , ssn_max);
-			rsn_max = max(res[i].RSN , rsn_max);
 		}
 	}
-	ssn_max = ssn_max % 10000;
-	rsn_max = rsn_max % 10000;
-	if(reply_cnt == tot){
-		print_loss_rate(0.0, 0.0, 0.0);
-	}else{
-		tw_loss_rate = 1.0 - (float)reply_cnt / tot;
-		int loss_num1, loss_num2;
-		loss_num1 = ssn_max - rsn_max;
-		loss_num1 = (0 > loss_num1 ? 0 : loss_num1);
-        	ow_loss_rate1 = (float)loss_num1 / ssn_max;
-		loss_num2 = rsn_max - reply_cnt;
-		ow_loss_rate2 = (float)loss_num2 / rsn_max;	
-		float tmp_val;
-		if((loss_num1 == 0) && (loss_num2 == 0)){
-			tmp_val = 1.0 - sqrt(1.0-tw_loss_rate);
-			print_loss_rate(tw_loss_rate, tmp_val, tmp_val);
-			ow1_res = tmp_val;
-		}else if(loss_num1 == 0){
-			print_loss_rate(tw_loss_rate, 0.0, tw_loss_rate);
-		}else if(loss_num2 == 0){
-			print_loss_rate(tw_loss_rate, tw_loss_rate, 0.0);
-			ow1_res = tw_loss_rate;
-		}else{
-			/* tw_loss_rate = 1 - (1 - k * ow_loss_rate1) * (1 - k * ow_loss_rate2)  */
-			tmp_val = sqrt((ow_loss_rate1+ow_loss_rate2)*(ow_loss_rate1+ow_loss_rate2) - 4*tw_loss_rate*ow_loss_rate1*ow_loss_rate2);
-			float k = (ow_loss_rate1 + ow_loss_rate2 - tmp_val)/(2*ow_loss_rate1*ow_loss_rate2);
-			print_loss_rate(tw_loss_rate, ow_loss_rate1*k, ow_loss_rate2*k);
-			ow1_res = ow_loss_rate1*k;
-		}
-	}
-	return ow1_res;
+	tw_loss_rate = (float)(tot - reply_cnt) / tot;
+	ow_loss_rate1 = (float)(tot - received) / tot;
+	if(received > 0) ow_loss_rate2 = (float)(received - reply_cnt) / received;
+	print_loss_rate(tw_loss_rate, ow_loss_rate1, ow_loss_rate2);
+	return ow_loss_rate1;
 }
 
 /* Calculate available bandwidth */
-void abw_calc(struct Raw_Res * res, int tot, int probe_size){
+void abw_calc(struct Raw_Res * res, int tot, int probe_size, int receive){
 	int i;
 	//long min_sendtime = LONG_MAX;
 	long min_rcvtime = LONG_MAX;
@@ -210,7 +182,7 @@ void abw_calc(struct Raw_Res * res, int tot, int probe_size){
 			max_rcvtime = max(max_rcvtime, res[i].Rcv_time);
 		}
 	}
-	float ow1_loss_rate = loss_rate_calc(res, tot);
+	float ow1_loss_rate = loss_rate_calc(res, tot, receive);
 	//printf("%ld  %.3f\n",max_rcvtime-min_rcvtime, (float)(max_rcvtime-min_rcvtime));
 	if(cnt > 1){
 		printf("Available bandwidth:\n");

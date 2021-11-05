@@ -29,14 +29,6 @@ int duration;  // mesurement duration (us)
 /* struct Raw_Res: raw data obtained by measurement */
 struct Raw_Res raw_res[1000];
 
-void us_sleep(int us)
-{
-	struct timeval ST;
-	ST.tv_sec    = us / 1000000;
-	ST.tv_usec   = us;
-	select(0, NULL, NULL, NULL, &ST);
-}
-
 /* Send probe packet */
 void * send_pkt(void * send_sd){
 	int sd = *(int *) send_sd;
