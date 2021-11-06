@@ -27,7 +27,7 @@ int duration;  // mesurement duration (us)
 /* struct Reply_Pkt: reply packet structure */
 
 /* struct Raw_Res: raw data obtained by measurement */
-struct Raw_Res raw_res[1000];
+struct Raw_Res1 raw_res[1000];
 
 /* Send probe packet */
 void * send_pkt(void * send_sd){

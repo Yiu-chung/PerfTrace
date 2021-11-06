@@ -5,14 +5,14 @@
 #include "./lib/func.c"
 #include "./lib/udp_server_reuseaddr.c"
 
-int					listenfd, n,n_udp, connfd, sockfd, pkt_cnt;
+int					listenfd, n_tcp, n_udp, connfd, sockfd_udp, pkt_cnt;
 long				RAND_ID;
 pid_t				childpid;
-socklen_t			clilen, clilen_udp;
+socklen_t			clilen_tcp, clilen_udp;
 struct sockaddr_in	servaddr, cliaddr;
 struct sockaddr_storage	cliaddr_udp;
-char				buff[MAXLINE+1], buff_udp[MAXLINE+1];
-struct OWD_list		OWDS[MAXPKT+1];
+char				buff_tcp[MAXLINE], buff_udp[MAXLINE];
+struct OWD_Record		OWDS[MAXPKT2];
 
 
 void * response1(void * send_sd){
@@ -24,11 +24,10 @@ void * response1(void * send_sd){
 	for ( ; ; ) {
 		clilen_udp = sizeof(cliaddr_udp);
 		n_udp = Recvfrom(sd, buff_udp, MAXLINE, 0, (SA *)&cliaddr_udp, &clilen_udp);
-		printf("**************\n");
 		if(RAND_ID == probe_pkt->ID){
 			pkt_cnt ++;
 			gettimeofday(&tv, NULL);
-			reply_pkt->Rcv_time = tv.tv_sec * 1000000 + tv.tv_usec;
+			reply_pkt->Send_arrive_time = tv.tv_sec * 1000000 + tv.tv_usec;
 			reply_pkt->RSN = pkt_cnt;
 			Sendto(sd, buff_udp, sizeof(struct Reply_Pkt), 0, (SA *)&cliaddr_udp, clilen_udp);
 		}
@@ -43,12 +42,11 @@ void * response2(void * send_sd){
 	for ( ; ; ) {
 		clilen_udp = sizeof(cliaddr_udp);
 		n_udp = Recvfrom(sd, buff_udp, MAXLINE, 0, (SA *)&cliaddr_udp, &clilen_udp);
-		printf("**************\n");
 		if(RAND_ID == probe_pkt->ID){
 			pkt_cnt ++;
 			gettimeofday(&tv, NULL);
 			OWDS[pkt_cnt].SSN = probe_pkt->SSN;
-			OWDS[pkt_cnt].owd = (int)(tv.tv_sec * 1000000 + tv.tv_usec - probe_pkt->Send_time);
+			OWDS[pkt_cnt].OWD = (int)(tv.tv_sec * 1000000 + tv.tv_usec - probe_pkt->Send_time);
 		}
 	}
 }
@@ -66,15 +64,15 @@ int main(int argc, char **argv)
 	bzero(&servaddr, sizeof(servaddr));
 	servaddr.sin_family      = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	servaddr.sin_port        = htons(19999);	/* daytime server */
+	servaddr.sin_port        = htons(19999);	/* TCP server */
 
 	Bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
 
 	Listen(listenfd, LISTENQ);
 
 	for ( ; ; ) {
-		clilen = sizeof(cliaddr);
-		if ( (connfd = accept(listenfd, (SA *) &cliaddr, &clilen)) < 0) {
+		clilen_tcp = sizeof(cliaddr);
+		if ( (connfd = accept(listenfd, (SA *) &cliaddr, &clilen_tcp)) < 0) {
 			if (errno == EINTR)
 				continue;		/* back to for() */
 			else
@@ -85,59 +83,59 @@ int main(int argc, char **argv)
 			Close(listenfd);	/* close listening socket */
 			if (isOccupied[0] == 0){
 				isOccupied[0] = 1;
-				snprintf(buff, sizeof(buff), "Accept");
-				Write(connfd, buff, strlen(buff));
-				if ((n = read(connfd, buff, MAXLINE)) > 0){
-					struct Task_Meta *	task_metadata = buff;
+				snprintf(buff_tcp, sizeof(buff_tcp), ACCEPT);
+				Write(connfd, buff_tcp, strlen(buff_tcp));
+				if ((n_tcp = Read(connfd, buff_tcp, MAXLINE)) > 0){
+					struct Task_Meta *	task_metadata = buff_tcp;
 					int duration = task_metadata->duration;
-					printf("%ld\t%d\t%d\t%d\n", task_metadata->ID, task_metadata->pkt_num, task_metadata->duration, task_metadata->task_mode);
+					printf("ID=%ld\tpkt_num=%d\tduration=%d\tmode=%d\n", task_metadata->ID, task_metadata->pkt_num, task_metadata->duration, task_metadata->task_mode);
 					RAND_ID = task_metadata->ID;
+					sockfd_udp = Udp_server_reuseaddr(NULL, "19999", NULL);
 					if(task_metadata->task_mode == 1){
-						//pkt_cnt = 0;
-						sockfd = Udp_server_reuseaddr(NULL, "19999", NULL);
-						int nRecvBuf=1024*1024; //set 1MB rcv buff
-						setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF,(const char*)&nRecvBuf,sizeof(int));
+						int nRecvBuf=32*1024; //set 32KB rcv buff
+						setsockopt(sockfd_udp, SOL_SOCKET, SO_RCVBUF,(const char*)&nRecvBuf,sizeof(int));
 						pthread_t response1_t;
-						pthread_create(&response1_t, NULL, response1, &sockfd);
+						pthread_create(&response1_t, NULL, response1, &sockfd_udp);
 						printf("I'm OK. Please send packet\n");
-						snprintf(buff, sizeof(buff), "I'm OK. Please send packet\n");
-						Write(connfd, buff, strlen(buff));
+						snprintf(buff_tcp, sizeof(buff_tcp), "I'm OK. Please send packet\n");
+						Write(connfd, buff_tcp, strlen(buff_tcp));
 						us_sleep(duration + 1000000);
 						// Kill the sending thread and receiving thread
 						pthread_cancel(response1_t);
-						int *pkt_cnt_tmp = buff;
-						pkt_cnt_tmp[0] = pkt_cnt;
+						int *pkt_cnt_received = buff_tcp;
+						pkt_cnt_received[0] = pkt_cnt;
 						//pkt_cnt_tmp[1] = 0;
-						Write(connfd, buff, sizeof(int)); // send the number of received pkt.
+						Write(connfd, buff_tcp, sizeof(int)); // send the number of received pkt.
 					}else{
-						sockfd = Udp_server_reuseaddr(NULL, "19999", NULL);
 						int nRecvBuf=1024*1024; //set 1MB rcv buff
-						setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF,(const char*)&nRecvBuf,sizeof(int));
+						setsockopt(sockfd_udp, SOL_SOCKET, SO_RCVBUF,(const char*)&nRecvBuf,sizeof(int));
 						pthread_t response2_t;
-						pthread_create(&response2_t, NULL, response2, &sockfd);
+						pthread_create(&response2_t, NULL, response2, &sockfd_udp);
 						printf("I'm OK. Please send packet\n");
-						snprintf(buff, sizeof(buff), "I'm OK. Please send packet\n");
-						Write(connfd, buff, strlen(buff));
+						snprintf(buff_tcp, sizeof(buff_tcp), "I'm OK. Please send packet\n");
+						Write(connfd, buff_tcp, strlen(buff_tcp));
 						us_sleep(duration + 1000000);
 						// Kill the sending thread and receiving thread
 						pthread_cancel(response2_t);
-						int *pkt_cnt_tmp = buff;
-						pkt_cnt_tmp[0] = pkt_cnt;
+						int *pkt_cnt_received = buff_tcp;
+						pkt_cnt_received[0] = pkt_cnt;
 						//pkt_cnt_tmp[1] = 0;
-						Write(connfd, buff, sizeof(int)); // send the number of received pkt.
+						Write(connfd, pkt_cnt_received, sizeof(int)); // send the number of received pkt.
+						/*
 						int i;
 						for(i=1;i<pkt_cnt+1;i++){
-							printf("%d\t%d\n", OWDS[i].SSN, OWDS[i].owd);
+							printf("%d\t%d\n", OWDS[i].SSN, OWDS[i].OWD);
 						}
+						*/
 
 
 					}
-					close(sockfd);
+					close(sockfd_udp);
 				}
 				isOccupied[0] = 0;
 			}else{
-				snprintf(buff, sizeof(buff), "Deny");
-				Write(connfd, buff, strlen(buff));
+				snprintf(buff_tcp, sizeof(buff_tcp), DENY);
+				Write(connfd, buff_tcp, strlen(buff_tcp));
 			}
 			exit(0);
 		}
