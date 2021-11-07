@@ -22,6 +22,7 @@
 #include	<sys/mman.h>    /* for mmap */
 
 #define MAXLINE	1600
+#define MAXPSIZE 1400
 #define	LISTENQ 1024
 #define MAXPKT1	1000
 #define MAXPKT2 4096
@@ -32,6 +33,8 @@ const long MEGA_RATE_UNIT = 1000 * 1000;
 const long GIGA_RATE_UNIT = 1000 * 1000 * 1000;
 const char * ACCEPT = "accept";
 const char * DENY = "deny";
+const char * MODE2_MEASURE = "measure";
+const char * MODE2_END = "end";
 
 /* Task Metadata */
 struct Task_Meta
@@ -74,7 +77,7 @@ struct Raw_Res1
 struct Raw_Res2
 {
 	long Send_time;
-	int SSN;
+	int RSN;
 	int OWD;
 };
 
@@ -87,6 +90,7 @@ struct OWD_Record
 struct Mode2_Reply_Header
 {
 	long ID;
+	int pkt_tot;
 	int offset;
 	int size;
 };

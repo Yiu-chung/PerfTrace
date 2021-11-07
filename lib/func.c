@@ -56,3 +56,11 @@ int     duration_atoi(const char *s)
 	}
 	return (int)n;
     }				/* end duration_atoi */
+
+
+int  get_rate_and_duration(int * rate_and_duration){
+    rate_and_duration[0] += 1;
+    rate_and_duration[1] = 1;
+    if(rate_and_duration[0] > 8) return 1;
+    return 0;
+}
