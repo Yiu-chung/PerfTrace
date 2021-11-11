@@ -22,7 +22,7 @@
 #include	<sys/mman.h>    /* for mmap */
 
 #define MAXLINE	1600
-#define MAXPSIZE 1400
+#define MAXPSIZE 1392
 #define	LISTENQ 1024
 #define MAXPKT1	1000
 #define MAXPKT2 4096
