@@ -64,3 +64,7 @@ int  get_rate_and_duration(int * rate_and_duration){
     if(rate_and_duration[0] > 8) return 1;
     return 0;
 }
+
+int vsnd_init(){
+    return 0;
+}

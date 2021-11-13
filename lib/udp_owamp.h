@@ -25,7 +25,10 @@
 #define MAXPSIZE 1392
 #define	LISTENQ 1024
 #define MAXPKT1	1000
-#define MAXPKT2 4096
+#define MAXPKT2 10240
+#define MAXITER 2
+#define MAXRATE 2 * 1000 * 1000 * 1000;
+
 #define	SA	struct sockaddr
 
 const long KILO_RATE_UNIT = 1000;
@@ -83,6 +86,7 @@ struct Raw_Res2
 
 struct OWD_Record
 {
+	long send_time;
 	int SSN;
 	int OWD;
 };
@@ -100,6 +104,20 @@ struct Mode2_Reply_Meta
 	long ID;
 	int pkt_num;
 	int reply_num;
+};
+
+struct Mode2_Send_Meta
+{
+	int pkt_num_send;
+	int psize;
+	int duration;
+};
+
+struct Mode2_Result
+{
+	float loss_rate;
+	float rate1; //Receiving rate of all packets
+	float rate2; //Receiving rate in duration
 };
 
 

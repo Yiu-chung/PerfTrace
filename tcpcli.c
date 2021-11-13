@@ -15,6 +15,7 @@ int psize;     // probe packet size (no more than 1400 bytes)
 double rate;   // sending rate (bps)
 int duration;  // mesurement duration (us)
 int RTT; // (us)
+char meas_type[10];  // measure or test in mode2
 
 /* struct Raw_Res1 for mode1: raw data obtained by measurement */
 struct Raw_Res1 raw_res1[MAXPKT1+1];
@@ -35,7 +36,10 @@ void * send_pkt(void * send_sd){
 	for(i=0; i<pkt_num_send; i++){
 		gettimeofday(&tv, NULL);
 		cur_time = tv.tv_sec * 1000000 + tv.tv_usec;
-		if(duration+1000 < cur_time-start_time) break;  // 1ms overtime, no longer send
+		if(duration+100 < cur_time-start_time){
+			duration = (int)(cur_time-start_time);
+			break;  // 0.1ms overtime, no longer send
+		}
 		wait_time = (int)(duration * i/(pkt_num_send - 1)) - (int)(cur_time - start_time);
 		if (wait_time > 0) us_sleep(wait_time);
 		gettimeofday(&tv, NULL);
@@ -92,10 +96,11 @@ int main(int argc, char **argv)
 			gettimeofday(&tv_id, NULL);
 			RAND_ID = tv_id.tv_sec * 1000000 + tv_id.tv_usec;
 			/* get task parameter. */
-			pkt_num_send = 10;
-			duration = 10000;
-			meas_mode = 1;
-			psize = 0;
+			pkt_num_send = 2000;
+			duration = 20000;
+			meas_mode = 2;
+			psize = MAXPSIZE;
+			strcpy(meas_type, "measure");
 			
 			struct Task_Meta *	task_metadata = sendline_tcp;
 			task_metadata->ID = RAND_ID;
@@ -146,13 +151,33 @@ int main(int argc, char **argv)
 					printf("===============================================\n");
 				}else{
 					if(pkt_num_send > MAXPKT2) err_quit("error: the number of probe packets shouldn't be bigger than 4096 in basic mode");
-					int rate_and_duration[2] = {5,5};
-					while(get_rate_and_duration(rate_and_duration) == 0){
+					//int rate_and_duration[2] = {5,5};
+					int iternum = 0;
+					vsnd_init();
+					while(iternum < MAXITER){
 						snprintf(sendline_tcp, sizeof(sendline_tcp), MODE2_MEASURE);
 						Write(sockfd_tcp, sendline_tcp, strlen(sendline_tcp));
 						us_sleep(RTT/2 + 1000); // wait
 						memset(raw_res2, 0, sizeof(raw_res2));
 						send_pkt(&sockfd_udp);
+						us_sleep(10000); // wait
+						struct Mode2_Send_Meta *Sendmeta_tcp = sendline_tcp;
+						Sendmeta_tcp->duration = duration;
+						Sendmeta_tcp->pkt_num_send = pkt_num_send;
+						Sendmeta_tcp->psize = max(psize, sizeof(struct Probe_Pkt)+28);
+						Write(sockfd_tcp, sendline_tcp, sizeof(struct Mode2_Send_Meta));
+						if( (n = read(sockfd_tcp, rcvline_tcp, MAXLINE)) > 0 ){
+							struct Mode2_Result *Result_tcp = rcvline_tcp;
+							printf("========================ABW========================\n");
+							printf("Iter %d:\n", iternum + 1);
+							printf("Loss rate: %f\n", Result_tcp->loss_rate);
+							printf("Specified sending rate: %fbps\n", rate);
+							printf("Actual sending rate: %fbps\n", (float)pkt_num_send*psize/duration*1000000*8);
+							printf("Receiving rate of all packets: %fbps\n",Result_tcp->rate1);
+							printf("Receiving rate in duration: %fbps\n",Result_tcp->rate2);
+						}
+						iternum ++;
+						/*
 						int offset, record_cnt = 0;
 						struct Mode2_Reply_Header * head_tcp = rcvline_tcp;
 						struct OWD_Record * payload_tcp = rcvline_tcp + sizeof(struct Mode2_Reply_Header);
@@ -163,20 +188,19 @@ int main(int argc, char **argv)
 								for(i=0; i<head_tcp->size;i++){
 									raw_res2[payload_tcp[i].SSN].RSN = offset + i;
 									raw_res2[payload_tcp[i].SSN].OWD = payload_tcp[i].OWD;
-									printf("SSN=%d, RSN=%d, OWD=%d\n", payload_tcp[i].SSN, offset + i, payload_tcp[i].OWD);
+									//printf("SSN=%d, RSN=%d, OWD=%d\n", payload_tcp[i].SSN, offset + i, payload_tcp[i].OWD);
 								}
+								printf("record_cnt=%d\n", record_cnt);
 							}
 							if(n>0 && record_cnt == head_tcp->pkt_tot)break;
 						}
-						/*
-						int * receive_pkt_tmp;
-						if( (n = read(sockfd_tcp, rcvline_tcp, MAXLINE)) > 0){ 
-							receive_pkt_tmp = rcvline_tcp;
-							printf("tot:%d, received:%d\n", pkt_num_send, receive_pkt_tmp[0]);
-						}
+						
+						psize = max(psize, sizeof(struct Probe_Pkt)+28);
+						abw_calc(rate, pkt_num_send, psize, duration, raw_res2);
 						*/
-						printf("end udp.\n");
+						if( strcmp(meas_type, "test")==0 ) break;
 					}
+					printf("end udp.\n");
 					snprintf(sendline_tcp, sizeof(sendline_tcp), MODE2_END);
 					Write(sockfd_tcp, sendline_tcp, strlen(sendline_tcp));
 					Close(sockfd_udp);

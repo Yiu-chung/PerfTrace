@@ -45,6 +45,7 @@ void * response2(void * send_sd){
 		if(RAND_ID == probe_pkt->ID){
 			pkt_cnt ++;
 			gettimeofday(&tv, NULL);
+			OWDS[pkt_cnt].send_time = probe_pkt->Send_time;
 			OWDS[pkt_cnt].SSN = probe_pkt->SSN;
 			OWDS[pkt_cnt].OWD = (int)(tv.tv_sec * 1000000 + tv.tv_usec - probe_pkt->Send_time);
 		}
@@ -54,6 +55,7 @@ void * response2(void * send_sd){
 int main(int argc, char **argv)
 {
 	//int pageSize = sysconf(_SC_PAGE_SIZE);
+	memset(OWDS, 0, sizeof(OWDS));
 	void *shared_addr = mmap(NULL, sizeof(int)*10, PROT_READ | PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, 0, 0);
 	int *isOccupied = 	shared_addr;
 	isOccupied[0]   = 	0;
@@ -122,7 +124,27 @@ int main(int argc, char **argv)
 							pkt_cnt = 0;
 							buff_tcp[n_tcp] = 0;	/* null terminate */
 							if(strcmp(buff_tcp, MODE2_MEASURE) == 0){
-								us_sleep(duration + RTT + 2000);
+								if((n_tcp = Read(connfd, buff_tcp, MAXLINE)) > 0){
+									struct Mode2_Send_Meta *Sendmeta_tcp = buff_tcp;
+									duration = Sendmeta_tcp->duration;
+									int pkt_num_send = Sendmeta_tcp->pkt_num_send;
+									int psize = Sendmeta_tcp->psize;
+									int i;
+									long min_rcv_time = OWDS[1].send_time + OWDS[1].OWD;
+									long max_rcv_time = OWDS[pkt_cnt].send_time + OWDS[pkt_cnt].OWD;
+									int pkt_num_rcv_in_duration = 0;
+									for(i=1; i<pkt_cnt+1; i++){
+										if(OWDS[i].send_time + (long)OWDS[i].OWD - min_rcv_time <= duration){
+											pkt_num_rcv_in_duration ++;
+										}
+									}
+									struct Mode2_Result *Result_tcp = buff_tcp;
+									Result_tcp->loss_rate = (float)(pkt_num_send - pkt_cnt)/pkt_num_send;
+									Result_tcp->rate1 = (float)pkt_cnt*psize/(max_rcv_time-min_rcv_time)*1000000*8;
+									Result_tcp->rate2 = (float)pkt_num_rcv_in_duration*psize/duration*1000000*8;
+									Write(connfd, buff_tcp, sizeof(struct Mode2_Result));
+								}
+								/*us_sleep(duration + RTT + 2000);
 								struct Mode2_Reply_Header * head_tcp = buff_tcp;
 								struct OWD_Record * payload_tcp = buff_tcp + sizeof(struct Mode2_Reply_Header);
 								int payload_record_num = (MAXPSIZE - sizeof(struct Mode2_Reply_Header)) / sizeof(struct OWD_Record);
@@ -136,24 +158,20 @@ int main(int argc, char **argv)
 										offset ++;
 										payload_tcp[i].OWD = OWDS[offset].OWD;
 										payload_tcp[i].SSN = OWDS[offset].SSN;
-										printf("SSN=%d, RSN=%d, OWD=%d\n", payload_tcp[i].SSN, offset, payload_tcp[i].OWD);
+										//printf("SSN=%d, RSN=%d, OWD=%d\n", payload_tcp[i].SSN, offset, payload_tcp[i].OWD);
 									}
 									Write(connfd, buff_tcp, sizeof(struct Mode2_Reply_Header) + sizeof(struct OWD_Record)*(head_tcp->size));
+									printf("offset=%d\n", offset);
+									us_sleep(3000);
 								}
+								*/
+								memset(OWDS, 0, sizeof(OWDS));
+								pkt_cnt = 0;
 							}else break;
 						}
 						// Kill the sending thread and receiving thread
 						pthread_cancel(response2_t);
 						
-						/*
-						int *pkt_cnt_received = buff_tcp;
-						pkt_cnt_received[0] = pkt_cnt;
-						Write(connfd, pkt_cnt_received, sizeof(int)); // send the number of received pkt.
-						int i;
-						for(i=1;i<pkt_cnt+1;i++){
-							printf("%d\t%d\n", OWDS[i].SSN, OWDS[i].OWD);
-						}
-						*/
 
 
 					}

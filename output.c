@@ -167,6 +167,7 @@ float loss_rate_calc(struct Raw_Res1 * res, int pkt_num_send, int pkt_num_send_a
 }
 
 /* Calculate available bandwidth */
+/*
 void abw_calc(struct Raw_Res1 * res, int tot, int probe_size, int receive){
 	int i;
 	//long min_sendtime = LONG_MAX;
@@ -187,5 +188,35 @@ void abw_calc(struct Raw_Res1 * res, int tot, int probe_size, int receive){
 		printf("Available bandwidth:\n");
 		printf("    %.3f bps\n", (cnt-1)*probe_size*8*1000000.0/(float)(max_rcvtime-min_rcvtime)*(1.0-ow1_loss_rate)/(tot*ow1_loss_rate+1.0));
 	}
+
+}
+*/
+void abw_calc(double rate, int pkt_num_send, int psize, int duration, struct Raw_Res2 *raw_res2){
+	int i;
+	long max_rcv_time = 0;
+	long min_rcv_time = 2000000000000000;
+	int pkt_num_rcv = 0;
+
+	for(i=1; i<pkt_num_send+1; i++){
+		if(raw_res2[i].RSN){
+			max_rcv_time = max(max_rcv_time, raw_res2[i].Send_time + (long)raw_res2[i].OWD);
+			min_rcv_time = min(min_rcv_time, raw_res2[i].Send_time + (long)raw_res2[i].OWD);
+			pkt_num_rcv ++;
+		}
+	}
+	int pkt_num_rcv_in_duration = 0;
+	for(i=1; i<pkt_num_send+1; i++){
+		if(raw_res2[i].RSN && raw_res2[i].Send_time + (long)raw_res2[i].OWD - min_rcv_time <= duration){
+			pkt_num_rcv_in_duration ++;
+		}
+	}
+	printf("========================ABW========================\n");
+	printf("Loss rate: %f\n", (float)(pkt_num_send - pkt_num_rcv)/pkt_num_send);
+	printf("Specified sending rate: %fbps\n", rate);
+	printf("Actual sending rate: %fbps\n", (float)pkt_num_send*psize/duration*1000000*8);
+	printf("Receiving rate of all packets: %fbps\n",(float)pkt_num_rcv*psize/(max_rcv_time-min_rcv_time)*1000000*8);
+	printf("Receiving rate in duration: %fbps\n",(float)pkt_num_rcv_in_duration*psize/duration*1000000*8);
+
+
 
 }
