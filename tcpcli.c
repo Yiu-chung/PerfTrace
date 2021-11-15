@@ -97,7 +97,7 @@ int main(int argc, char **argv)
 			RAND_ID = tv_id.tv_sec * 1000000 + tv_id.tv_usec;
 			/* get task parameter. */
 			pkt_num_send = 2000;
-			duration = 20000;
+			duration = DURATION;
 			meas_mode = 2;
 			psize = MAXPSIZE;
 			strcpy(meas_type, "measure");
@@ -150,11 +150,17 @@ int main(int argc, char **argv)
 					loss_rate_calc(raw_res1, pkt_num_send, pkt_num_send_arrive[0]);
 					printf("===============================================\n");
 				}else{
-					if(pkt_num_send > MAXPKT2) err_quit("error: the number of probe packets shouldn't be bigger than 4096 in basic mode");
-					//int rate_and_duration[2] = {5,5};
 					int iternum = 0;
-					vsnd_init();
+					rate = -1;
+					send_rate_init(&rate);
+					construct_send_args(rate, &duration, &pkt_num_send, &psize);
+					int step = 0;
+					//int rate_and_duration[2] = {5,5};
+					float mid_res[4];
+					double rcv_rate = 0;
 					while(iternum < MAXITER){
+						printf("rate=%f, duration=%d, pkt_num_send=%d, psize=%d, step=%d\n", rate, duration, pkt_num_send, psize, step);
+						if(pkt_num_send > MAXPKT2) err_quit("error: the number of probe packets shouldn't be bigger than 10240 in ABM mode");
 						snprintf(sendline_tcp, sizeof(sendline_tcp), MODE2_MEASURE);
 						Write(sockfd_tcp, sendline_tcp, strlen(sendline_tcp));
 						us_sleep(RTT/2 + 1000); // wait
@@ -172,9 +178,42 @@ int main(int argc, char **argv)
 							printf("Iter %d:\n", iternum + 1);
 							printf("Loss rate: %f\n", Result_tcp->loss_rate);
 							printf("Specified sending rate: %fbps\n", rate);
-							printf("Actual sending rate: %fbps\n", (float)pkt_num_send*psize/duration*1000000*8);
+							double actual_rate = (double)pkt_num_send*psize/duration*1000000*8;
+							printf("Actual sending rate: %fbps\n", actual_rate);
 							printf("Receiving rate of all packets: %fbps\n",Result_tcp->rate1);
 							printf("Receiving rate in duration: %fbps\n",Result_tcp->rate2);
+							rcv_rate = (Result_tcp->rate1+Result_tcp->rate2)/2;
+							if(step == 0){
+								if(Result_tcp->loss_rate > 0.1){
+									rate = rcv_rate;
+									construct_send_args(rate, &duration, &pkt_num_send, &psize);
+								}else if(rcv_rate*THRESHOLD < actual_rate){
+									rate = rcv_rate;
+									construct_send_args(rate, &duration, &pkt_num_send, &psize);
+									step = 1;
+								}else{
+									if(actual_rate * 1.01 < rate){ // use 1.01 to increases robustness
+										rate = min(actual_rate, rcv_rate);
+										construct_send_args(rate, &duration, &pkt_num_send, &psize);
+										step = 1;
+									}else{
+										rate = rate * FACTOR;
+										construct_send_args(rate, &duration, &pkt_num_send, &psize);
+									}
+								}
+							}else if(step == 1){
+								mid_res[0] = actual_rate;
+								mid_res[1] = rcv_rate;
+								rate = rcv_rate;
+								construct_send_args(rate, &duration, &pkt_num_send, &psize);
+								step = 2;
+							}else{
+								mid_res[2] = actual_rate;
+								mid_res[3] = rcv_rate;
+
+								construct_send_args(rate, &duration, &pkt_num_send, &psize);
+								step = 3;
+							}
 						}
 						iternum ++;
 						/*
@@ -198,7 +237,22 @@ int main(int argc, char **argv)
 						psize = max(psize, sizeof(struct Probe_Pkt)+28);
 						abw_calc(rate, pkt_num_send, psize, duration, raw_res2);
 						*/
-						if( strcmp(meas_type, "test")==0 ) break;
+						if( strcmp(meas_type, "test")==0 || step == 3) break;
+					}
+					printf("\n======================Final Result======================\n");
+					if(step == 3){
+						double s1,r1,s2,r2;
+						s1 = mid_res[0];
+						r1 = mid_res[1];
+						s2 = mid_res[2];
+						r2 = mid_res[3];
+						printf("Vsnd1=%f\tVrcv1=%f\tVsnd2=%f\tVrcv2=%f\n", s1,r1,s2,r2);
+						if(r1<=s1 && r2<=s2){
+							if (s2-r2 < s1 -r1) printf("final result: %fbps.\n",(s1*r2*(r1+s2)-r1*s2*(r2+s1))/(r2*s1-s2*r1));
+							else printf("final result: %fbps.\n", r2);
+						}else printf("final result: %fbps.\n", min(r2,min(s1,r1)) );
+					}else{
+						printf("final result: %fbps.\n", rcv_rate);
 					}
 					printf("end udp.\n");
 					snprintf(sendline_tcp, sizeof(sendline_tcp), MODE2_END);

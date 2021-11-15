@@ -65,6 +65,24 @@ int  get_rate_and_duration(int * rate_and_duration){
     return 0;
 }
 
-int vsnd_init(){
+int send_rate_init(double *rate){
+    if (*rate > 0) return 0;
+    //if sql is not null: return sql rate; else return MAXRATE
+    double rate_list[10] = {965619136.0, 752092672.0, 924844799.999, 507801600.0, 924411648.0, 713137920.0,917323008.0, 739203979.146131, 910924800.000000, 735476398.761116};
+    int cur = 5;
+    double dedicate = rate_list[cur]*1.2;
+    int i;
+    for(i=0; i<10; i++){
+        dedicate = max(dedicate, rate_list[i]);
+    }
+    *rate = dedicate;
+    return 0;
+}
+
+int construct_send_args(double rate, int *duration, int *pkt_num_send, int *psize){
+    *duration = DURATION;
+    long tot_size = DURATION * (long)rate / 1000000 / 8;
+    *psize = (int)max(sizeof(struct Probe_Pkt),min(tot_size/100, MAXPSIZE));
+    *pkt_num_send = tot_size / (*psize);
     return 0;
 }

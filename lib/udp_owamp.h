@@ -26,8 +26,12 @@
 #define	LISTENQ 1024
 #define MAXPKT1	1000
 #define MAXPKT2 10240
-#define MAXITER 2
-#define MAXRATE 2 * 1000 * 1000 * 1000;
+#define MAXITER 10
+#define MAXRATE 2 * 1000 * 1000 * 1000
+#define DURATION 20000
+#define FACTOR 1.5
+#define THRESHOLD 1.05
+#define MAX_LIMIT 200
 
 #define	SA	struct sockaddr
 
@@ -38,6 +42,7 @@ const char * ACCEPT = "accept";
 const char * DENY = "deny";
 const char * MODE2_MEASURE = "measure";
 const char * MODE2_END = "end";
+const char * DATA_BASE = "./data/";
 
 /* Task Metadata */
 struct Task_Meta
