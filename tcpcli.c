@@ -155,6 +155,7 @@ int main(int argc, char **argv)
 					send_rate_init(&rate);
 					construct_send_args(rate, &duration, &pkt_num_send, &psize);
 					int step = 0;
+					int sub_step = 0;
 					//int rate_and_duration[2] = {5,5};
 					float mid_res[4];
 					double rcv_rate = 0;
@@ -184,10 +185,10 @@ int main(int argc, char **argv)
 							printf("Receiving rate in duration: %fbps\n",Result_tcp->rate2);
 							rcv_rate = (Result_tcp->rate1+Result_tcp->rate2)/2;
 							if(step == 0){
-								if(Result_tcp->loss_rate > 0.1){
-									rate = rcv_rate;
+								if(Result_tcp->loss_rate > LOSS_RATE_THRESHOLD && sub_step == 0){
+									rate = rcv_rate / FACTOR;
 									construct_send_args(rate, &duration, &pkt_num_send, &psize);
-								}else if(rcv_rate*THRESHOLD < actual_rate){
+								}else if(rcv_rate*RATE_THRESHOLD < actual_rate){
 									rate = rcv_rate;
 									construct_send_args(rate, &duration, &pkt_num_send, &psize);
 									step = 1;
@@ -197,6 +198,7 @@ int main(int argc, char **argv)
 										construct_send_args(rate, &duration, &pkt_num_send, &psize);
 										step = 1;
 									}else{
+										sub_step = 1;
 										rate = rate * FACTOR;
 										construct_send_args(rate, &duration, &pkt_num_send, &psize);
 									}

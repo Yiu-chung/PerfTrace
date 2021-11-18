@@ -68,7 +68,7 @@ int  get_rate_and_duration(int * rate_and_duration){
 int send_rate_init(double *rate){
     if (*rate > 0) return 0;
     //if sql is not null: return sql rate; else return MAXRATE
-    double rate_list[10] = {965619136.0, 752092672.0, 924844799.999, 507801600.0, 924411648.0, 713137920.0,917323008.0, 739203979.146131, 910924800.000000, 735476398.761116};
+    double rate_list[10] = {725348659.032503, 752092672.0, 562865408.00, 507801600.0, 924411648.0, 713137920.0,917323008.0, 739203979.146131, 910924800.000000, 735476398.761116};
     int cur = 5;
     double dedicate = rate_list[cur]*1.2;
     int i;
@@ -76,6 +76,7 @@ int send_rate_init(double *rate){
         dedicate = max(dedicate, rate_list[i]);
     }
     *rate = dedicate;
+    *rate = 725348659.032503;
     return 0;
 }
 

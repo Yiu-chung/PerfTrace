@@ -28,10 +28,11 @@
 #define MAXPKT2 10240
 #define MAXITER 10
 #define MAXRATE 2 * 1000 * 1000 * 1000
-#define DURATION 20000
+#define DURATION 30000
 #define FACTOR 1.5
-#define THRESHOLD 1.05
+#define RATE_THRESHOLD 1.05
 #define MAX_LIMIT 200
+#define LOSS_RATE_THRESHOLD 0.1
 
 #define	SA	struct sockaddr
 
