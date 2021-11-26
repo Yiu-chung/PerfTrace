@@ -220,6 +220,42 @@ int insert_mode2(char * task_name, long time_stamp, char * src_IP, char * dst_IP
    return 0;
 }
 
-int insert_mode1(){
+int insert_mode1(char * task_name, char * src_IP, char * dst_IP, struct Measurement result){
+   char insert_sql[256] = "INSERT INTO ";
+   //char *sql1 = "INSERT INTO PerfRecords VALUES( NULL , 'Test1', 1635825644469669 , '8.8.8.8' , '1.1.1.1', 2,101010,NULL, 202020, 456.5, NULL, 890.6, 0.01, NULL, 0.02, 10000000012.0,  NULL);" ;
+   snprintf(insert_sql, sizeof(insert_sql),"INSERT INTO %s VALUES(NULL, \'%s\', %ld, \'%s\'", \
+      TABLE_NAME, task_name, result.time_stamp, src_IP, );
+   strcat(insert_sql, TABLE_NAME);
+   strcat(insert_sql, " VALUES( NULL , \'");
+   strcat(insert_sql, task_name);
+   strcat(insert_sql, "\', ");
+   char time_stamp_str[20];
+   snprintf(time_stamp_str, sizeof(time_stamp_str),"%ld", result.time_stamp);
+   strcat(insert_sql, time_stamp_str);
+   strcat(insert_sql, ", \'");
+   strcat(insert_sql, src_IP);
+   strcat(insert_sql, "\', \'");
+   strcat(insert_sql, dst_IP);
+   strcat(insert_sql, "\', 2, ");
+   char owd_sd_str[10], owd_ds_str;
+   snprintf(owd_sd_str, sizeof(owd_sd_str),"%d", result.OWD_sd);
+   strcat(insert_sql, owd_sd_str);
+
+   strcat(insert_sql, ", NULL, NULL, ");
+   char jitter_sd_str[16];
+   snprintf(jitter_sd_str, sizeof(jitter_sd_str),"%.3f", Jitter_sd);
+   strcat(insert_sql, jitter_sd_str);
+   strcat(insert_sql, ", NULL, NULL, ");
+   char lossrate_sd_str[12];
+   snprintf(lossrate_sd_str, sizeof(lossrate_sd_str),"%.9f", LossRate_sd);
+   strcat(insert_sql, lossrate_sd_str);
+   strcat(insert_sql, ", NULL, NULL, ");
+   char abw_sd_str[24];
+   snprintf(abw_sd_str, sizeof(abw_sd_str),"%.3f", ABW_sd);
+   strcat(insert_sql, abw_sd_str);
+   strcat(insert_sql, ", NULL);");
+   //printf("%s\n", insert_sql);
+   insert(DATA_BASE, insert_sql);
+   return 0;
    return 0;
 }
