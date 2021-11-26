@@ -76,7 +76,7 @@ int send_rate_init(double *rate){
         dedicate = max(dedicate, rate_list[i]);
     }
     *rate = dedicate;
-    *rate = 725348659.032503;
+    *rate = 685348659.032503;
     return 0;
 }
 

@@ -27,7 +27,7 @@
 #define MAXPKT1	1000
 #define MAXPKT2 10240
 #define MAXITER 10
-#define MAXRATE 2 * 1000 * 1000 * 1000
+#define MAXRATE 500 * 1000 * 1000
 #define DURATION 30000
 #define FACTOR 1.5
 #define RATE_THRESHOLD 1.05
@@ -42,8 +42,28 @@ const long GIGA_RATE_UNIT = 1000 * 1000 * 1000;
 const char * ACCEPT = "accept";
 const char * DENY = "deny";
 const char * MODE2_MEASURE = "measure";
+const char * MODE2_TEST = "test";
 const char * MODE2_END = "end";
-const char * DATA_BASE = "./data/";
+const char * DATA_BASE = "./data/perftrace.db";
+const char * TABLE_NAME = "PerfRecords";
+const char * create_sql = "CREATE TABLE PerfRecords(    \
+            ID INTEGER PRIMARY KEY AUTOINCREMENT, \
+            Task_Name VARCHAR(50),      \
+            Time_stamp INTEGER NOT NULL, \
+            Source_IP VARCHAR(50) NOT NULL, \
+            Dest_IP VARCHAR(50) NOT NULL, \
+            mode INTEGER, \
+            OWD_sd INTEGER,\
+            OWD_ds INTEGER,\
+            RTT INTEGER,    \
+            Jitter_sd REAL,  \
+            Jitter_ds REAL,  \
+            Jitter_rtt REAL,  \
+            LossRate_sd REAL,  \
+            LossRate_ds REAL, \
+            LossRate_rtt REAL, \
+            ABW_sd REAL, \
+            ABW_ds REAL);" ;
 
 /* Task Metadata */
 struct Task_Meta
@@ -126,6 +146,21 @@ struct Mode2_Result
 	float rate2; //Receiving rate in duration
 };
 
+struct Measurement{
+	long time_stamp;
+	int mode;
+    int OWD_sd;
+    int OWD_ds;
+	int RTT;
+    float Jitter_sd;
+    float Jitter_ds;
+    float Jitter_rtt;
+    float LossRate_sd;
+    float LossRate_ds;
+    float LossRate_rtt;
+    float ABW_sd;
+    float ABW_ds;
+};
 
 
 

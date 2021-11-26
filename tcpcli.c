@@ -111,6 +111,7 @@ int main(int argc, char **argv)
 			struct timeval tv1, tv2;
 			gettimeofday(&tv1, NULL);
 			Write(sockfd_tcp, sendline_tcp, sizeof(struct Task_Meta));  // send metadata
+
 			if( (n = Read(sockfd_tcp, rcvline_tcp, MAXLINE)) > 0){  // wait for ack. When ack received, start sending probe packets.
 				gettimeofday(&tv2, NULL);
 				RTT = (int)((tv2.tv_sec-tv1.tv_sec)*1000000 + tv2.tv_usec-tv1.tv_usec);
@@ -218,30 +219,10 @@ int main(int argc, char **argv)
 							}
 						}
 						iternum ++;
-						/*
-						int offset, record_cnt = 0;
-						struct Mode2_Reply_Header * head_tcp = rcvline_tcp;
-						struct OWD_Record * payload_tcp = rcvline_tcp + sizeof(struct Mode2_Reply_Header);
-						while(1){
-							if( (n = read(sockfd_tcp, rcvline_tcp, MAXLINE)) > 0 && head_tcp->ID == RAND_ID){ 
-								offset = head_tcp->offset;
-								record_cnt += head_tcp->size;
-								for(i=0; i<head_tcp->size;i++){
-									raw_res2[payload_tcp[i].SSN].RSN = offset + i;
-									raw_res2[payload_tcp[i].SSN].OWD = payload_tcp[i].OWD;
-									//printf("SSN=%d, RSN=%d, OWD=%d\n", payload_tcp[i].SSN, offset + i, payload_tcp[i].OWD);
-								}
-								printf("record_cnt=%d\n", record_cnt);
-							}
-							if(n>0 && record_cnt == head_tcp->pkt_tot)break;
-						}
-						
-						psize = max(psize, sizeof(struct Probe_Pkt)+28);
-						abw_calc(rate, pkt_num_send, psize, duration, raw_res2);
-						*/
-						if( strcmp(meas_type, "test")==0 || step == 3) break;
+						if( strcmp(meas_type, MODE2_TEST)==0 || step == 3) break;
 					}
 					printf("\n======================Final Result======================\n");
+					double final_res = 0.0;
 					if(step == 3){
 						double s1,r1,s2,r2;
 						s1 = mid_res[0];
@@ -250,11 +231,11 @@ int main(int argc, char **argv)
 						r2 = mid_res[3];
 						printf("Vsnd1=%f\tVrcv1=%f\tVsnd2=%f\tVrcv2=%f\n", s1,r1,s2,r2);
 						if(r1<=s1 && r2<=s2){
-							if (s2-r2 < s1 -r1) printf("final result: %fbps.\n",(s1*r2*(r1+s2)-r1*s2*(r2+s1))/(r2*s1-s2*r1));
-							else printf("final result: %fbps.\n", r2);
-						}else printf("final result: %fbps.\n", min(r2,min(s1,r1)) );
+							if (s2-r2 < s1 -r1) printf("final result: %fbps.\n",final_res = (s1*r2*(r1+s2)-r1*s2*(r2+s1))/(r2*s1-s2*r1));
+							else printf("final result: %fbps.\n", final_res = r2);
+						}else printf("final result: %fbps.\n", final_res = min(r2,min(s1,r1)) );
 					}else{
-						printf("final result: %fbps.\n", rcv_rate);
+						printf("final result: %fbps.\n", final_res = rcv_rate);
 					}
 					printf("end udp.\n");
 					snprintf(sendline_tcp, sizeof(sendline_tcp), MODE2_END);
