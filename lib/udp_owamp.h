@@ -28,11 +28,13 @@
 #define MAXPKT2 10240
 #define MAXITER 10
 #define MAXRATE 500 * 1000 * 1000
-#define DURATION 30000
+#define DURATION "20ms"
 #define FACTOR 1.5
 #define RATE_THRESHOLD 1.05
 #define MAX_LIMIT 200
 #define LOSS_RATE_THRESHOLD 0.1
+#define TCP_PORT 19999
+#define UDP_PORT_STR "19999"
 
 #define	SA	struct sockaddr
 
@@ -141,6 +143,9 @@ struct Mode2_Send_Meta
 
 struct Mode2_Result
 {
+	int aver_owd;
+	float jitter;
+	int arv_pkt_cnt;
 	float loss_rate;
 	float rate1; //Receiving rate of all packets
 	float rate2; //Receiving rate in duration

@@ -18,10 +18,18 @@ int main(){
     {
         printf("%f\n", query_res[i]);
     }*/
+    query(DATA_BASE,"PerfRecords","8.8.8.8","1.1.1.1","ABW_sd", 2, 100);
     double rate = -1.0;
     double * rate_addr = &rate;
     send_rate_init(rate_addr, "8.8.8.8","1.1.1.1");
     printf("%lf\n", *rate_addr);
-    insert_mode2("test0",1111,"1.1.1.1","8.8.8.8",12300,2200,0.02,13243543355.67);
+    struct Measurement meas_res;
+    memset(&meas_res, 0, sizeof(meas_res));
+    meas_res.mode = 2;
+    insert_mode2("test0","1.1.1.1","8.8.8.8", meas_res);
+    memset(&meas_res, 0, sizeof(meas_res));
+    meas_res.mode = 1;
+    insert_mode1("ttt","11.11.11.11","2.2.2.2", meas_res);
+
     return 0;
 }

@@ -10,7 +10,7 @@ void print_raw_data(struct Raw_Res1 * res, int pkt_num_send){
 }
 
 /* Calculate one_way delay and two_way delay using raw data */
-void delay_calc(struct Raw_Res1 * res, int pkt_num_send){
+void delay_calc(struct Raw_Res1 * res, int pkt_num_send, struct Measurement * meas_res){
 	int tw[3], ow1[3], ow2[3]; // min/aver/max
 	int cnt = 0;
 	int i = 1;
@@ -43,12 +43,18 @@ void delay_calc(struct Raw_Res1 * res, int pkt_num_send){
 	}
 	if(cnt == 0){
 		printf("All probe packets are lost\n");
+		meas_res->OWD_sd = -1;
+		meas_res->OWD_ds = -1;
+		meas_res->RTT = -1;
 	}else{
 		printf("Two way delay:\n");
 		printf("    min/aver/max = %.3f/%.3f/%.3f ms\n",tw[0]/1000.0, tw[1]/1000.0/cnt, tw[2]/1000.0);
 		printf("One way delay:\n");
 		printf("    Source->Dest: min/aver/max = %.3f/%.3f/%.3f ms\n",ow1[0]/1000.0, ow1[1]/1000.0/cnt, ow1[2]/1000.0);
 		printf("    Dest->Source: min/aver/max = %.3f/%.3f/%.3f ms\n",ow2[0]/1000.0, ow2[1]/1000.0/cnt, ow2[2]/1000.0);
+		meas_res->OWD_sd = ow1[1]/cnt;
+		meas_res->OWD_ds = ow2[1]/cnt;
+		meas_res->RTT = tw[1]/cnt;
 	}
 }
 
@@ -96,7 +102,7 @@ void jitter_calc(struct Raw_Res * res, int tot){
 
 /* Calculate one_way jitter and two_way jitter using raw data */
 /* According to rfc1889 : https://www.ietf.org/rfc/rfc1889.txt */
-void jitter_calc(struct Raw_Res1 * res, int pkt_num_send){
+void jitter_calc(struct Raw_Res1 * res, int pkt_num_send, struct Measurement * meas_res){
 	int cnt = 0;
 	float twj, owj1, owj2;
 	twj = owj1 = owj2 = -1.0;
@@ -138,17 +144,24 @@ void jitter_calc(struct Raw_Res1 * res, int pkt_num_send){
 		printf("One way jitter:\n");
 		printf("    Source->Dest: %.3f ms\n", owj1/1000.0);
 		printf("    Dest->Source: %.3f ms\n", owj2/1000.0);
+		meas_res->Jitter_sd = owj1;
+		meas_res->Jitter_ds = owj2;
+		meas_res->Jitter_rtt = twj;
+	}else{
+		meas_res->Jitter_sd = -1;
+		meas_res->Jitter_ds = -1;
+		meas_res->Jitter_rtt = -1;
 	}
 }
 
 /* Calculate one_way loss rate and two_way loss rate using raw data */
-float loss_rate_calc(struct Raw_Res1 * res, int pkt_num_send, int pkt_num_send_arrive){
-	void print_loss_rate(float tw, float ow1, float ow2) 
-	{
-		printf("Two way packet loss rate:\n    %-4.2f%%\n",tw*100);
-		printf("One way packet loss rate:\n");
-		printf("    Source->Dest: %-4.2f%%\n    Dest->Source: %-4.2f%%\n", ow1*100, ow2*100);
-	}
+void print_loss_rate(float tw, float ow1, float ow2) 
+{
+	printf("Two way packet loss rate:\n    %-4.2f%%\n",tw*100);
+	printf("One way packet loss rate:\n");
+	printf("    Source->Dest: %-4.2f%%\n    Dest->Source: %-4.2f%%\n", ow1*100, ow2*100);
+}
+float loss_rate_calc(struct Raw_Res1 * res, int pkt_num_send, int pkt_num_send_arrive, struct Measurement * meas_res){
 	float tw_loss_rate, ow_loss_rate1, ow_loss_rate2;
 	tw_loss_rate = ow_loss_rate1 = ow_loss_rate2 = 0.0;
 	int pkt_num_reply_arrive;
@@ -163,6 +176,9 @@ float loss_rate_calc(struct Raw_Res1 * res, int pkt_num_send, int pkt_num_send_a
 	ow_loss_rate1 = (float)(pkt_num_send - pkt_num_send_arrive) / pkt_num_send;
 	if(pkt_num_send_arrive > 0) ow_loss_rate2 = (float)(pkt_num_send_arrive - pkt_num_reply_arrive) / pkt_num_send_arrive;
 	print_loss_rate(tw_loss_rate, ow_loss_rate1, ow_loss_rate2);
+	meas_res->LossRate_sd = ow_loss_rate1;
+	meas_res->LossRate_ds = ow_loss_rate2;
+	meas_res->LossRate_rtt = tw_loss_rate;
 	return ow_loss_rate1;
 }
 

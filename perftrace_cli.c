@@ -3,6 +3,7 @@
 #include "./lib/wrapunix.c"
 #include "./lib/udp_connect.c"
 #include "./lib/func.c"
+#include "./lib/sql_func.c"
 #include "output.c"
 
 char sendline_udp[MAXLINE], rcvline_udp[MAXLINE], sendline_tcp[MAXLINE], rcvline_tcp[MAXLINE];  // Package content
@@ -77,17 +78,59 @@ int main(int argc, char **argv)
 	int					sockfd_tcp, sockfd_udp, n;
 	struct sockaddr_in	servaddr;
 	struct timeval		tv_id, tv;
+	struct Measurement	meas_res;
+	memset(&meas_res, 0, sizeof(meas_res));
+	/* create sqlite table */
+	if(table_is_exist(DATA_BASE, TABLE_NAME) == 0) create_table(DATA_BASE, create_sql);
+	pkt_num_send = 10;
+	char *src_ip = "0.0.0.0";
+	char *task_name = "test";
+	char *m_val = "1", *c_val = "10", *i_val = "1000us", *l_val = "0", *serv_ip = "0.0.0.0";
+	char *d_val = DURATION, *r_val = "-1";  //ABM mode
+	if (argc < 3){
+		err_quit("usage: a.out -s <IPaddress>");
+	}else{
+		int opt;
+		char *optstring = "s:m:c:i:l:d:r:h:n:";
+		while ((opt = getopt(argc, argv, optstring)) != -1) {
+			switch(opt) {
+				case 's': // measurement server IP
+					serv_ip = optarg;
+					break;
+				case 'm': // measurement mode, basic(1) or ABM(2)
+					m_val = optarg;
+					break;
+				case 'c': //count of sending packets
+					c_val = optarg;
+					break;
+				case 'i': //interval (microsecond)
+					i_val = optarg;
+					break;
+				case 'l': //length of probe packet
+					l_val = optarg;
+					break;
+				case 'd': // duration of a measurement
+					d_val = optarg;
+					break;
+				case 'r': // send rate
+					r_val = optarg;
+					break;
+				case 'n': // task name
+					task_name = optarg;
+					break;
+				default:
+					break;
 
-	if (argc != 2)
-		err_quit("usage: a.out <IPaddress>");
-
+			}
+		}
+	}
 	if ( (sockfd_tcp = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 		err_sys("socket error");
 	bzero(&servaddr, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
-	servaddr.sin_port   = htons(19999);	/* measurement server */
-	if (inet_pton(AF_INET, argv[1], &servaddr.sin_addr) <= 0)
-		err_quit("inet_pton error for %s", argv[1]);
+	servaddr.sin_port   = htons(TCP_PORT);	/* measurement server */
+	if (inet_pton(AF_INET, serv_ip, &servaddr.sin_addr) <= 0)
+		err_quit("inet_pton error for %s", serv_ip);
 	if (connect(sockfd_tcp, (SA *) &servaddr, sizeof(servaddr)) < 0)
 		err_sys("connect error");
 	if ( (n = read(sockfd_tcp, rcvline_tcp, MAXLINE)) > 0) {
@@ -96,10 +139,10 @@ int main(int argc, char **argv)
 			gettimeofday(&tv_id, NULL);
 			RAND_ID = tv_id.tv_sec * 1000000 + tv_id.tv_usec;
 			/* get task parameter. */
-			pkt_num_send = 2000;
-			duration = DURATION;
-			meas_mode = 2;
-			psize = MAXPSIZE;
+			pkt_num_send = atoi(c_val);
+			duration = duration_atoi(d_val);
+			meas_mode = atoi(m_val);
+			psize = atoi(l_val);
 			strcpy(meas_type, "measure");
 			
 			struct Task_Meta *	task_metadata = sendline_tcp;
@@ -111,13 +154,14 @@ int main(int argc, char **argv)
 			struct timeval tv1, tv2;
 			gettimeofday(&tv1, NULL);
 			Write(sockfd_tcp, sendline_tcp, sizeof(struct Task_Meta));  // send metadata
-
+			meas_res.mode = meas_mode;
+			meas_res.time_stamp = tv1.tv_sec * 1000000L + tv1.tv_usec;
 			if( (n = Read(sockfd_tcp, rcvline_tcp, MAXLINE)) > 0){  // wait for ack. When ack received, start sending probe packets.
 				gettimeofday(&tv2, NULL);
 				RTT = (int)((tv2.tv_sec-tv1.tv_sec)*1000000 + tv2.tv_usec-tv1.tv_usec);
 				printf("RTT=%d\n",RTT);
 				rcvline_tcp[n] = 0;
-				sockfd_udp = Udp_connect(argv[1], "19999");
+				sockfd_udp = Udp_connect(serv_ip, UDP_PORT_STR);
 				int nZero=2*1024*1024; //set 2MB send buff
 				setsockopt(sockfd_udp, SOL_SOCKET,SO_SNDBUF, (char *)&nZero,sizeof(nZero));
 				int i;
@@ -144,22 +188,26 @@ int main(int argc, char **argv)
 					printf("end udp.\n");
 					//print_raw_data(raw_res1, pkt_num_send);
 					printf("===============================================\n");
-					delay_calc(raw_res1, pkt_num_send);
+					delay_calc(raw_res1, pkt_num_send, &meas_res);
 					printf("===============================================\n");
-					jitter_calc(raw_res1, pkt_num_send);
+					jitter_calc(raw_res1, pkt_num_send, &meas_res);
 					printf("===============================================\n");
-					loss_rate_calc(raw_res1, pkt_num_send, pkt_num_send_arrive[0]);
+					loss_rate_calc(raw_res1, pkt_num_send, pkt_num_send_arrive[0], &meas_res);
 					printf("===============================================\n");
+					insert_mode1(task_name, src_ip, serv_ip, meas_res);
 				}else{
 					int iternum = 0;
-					rate = -1;
-					send_rate_init(&rate);
+					rate = rate_atof(r_val);
+					send_rate_init(&rate, src_ip,serv_ip);
+					printf("initial rate = %f\n", rate);
 					construct_send_args(rate, &duration, &pkt_num_send, &psize);
 					int step = 0;
 					int sub_step = 0;
 					//int rate_and_duration[2] = {5,5};
 					float mid_res[4];
 					double rcv_rate = 0;
+					int tot_pkt_snd = 0;
+					int tot_pkt_arv = 0;
 					while(iternum < MAXITER){
 						printf("rate=%f, duration=%d, pkt_num_send=%d, psize=%d, step=%d\n", rate, duration, pkt_num_send, psize, step);
 						if(pkt_num_send > MAXPKT2) err_quit("error: the number of probe packets shouldn't be bigger than 10240 in ABM mode");
@@ -172,10 +220,14 @@ int main(int argc, char **argv)
 						struct Mode2_Send_Meta *Sendmeta_tcp = sendline_tcp;
 						Sendmeta_tcp->duration = duration;
 						Sendmeta_tcp->pkt_num_send = pkt_num_send;
+						tot_pkt_snd += pkt_num_send;
 						Sendmeta_tcp->psize = max(psize, sizeof(struct Probe_Pkt)+28);
 						Write(sockfd_tcp, sendline_tcp, sizeof(struct Mode2_Send_Meta));
 						if( (n = read(sockfd_tcp, rcvline_tcp, MAXLINE)) > 0 ){
 							struct Mode2_Result *Result_tcp = rcvline_tcp;
+							tot_pkt_arv += Result_tcp->arv_pkt_cnt;
+							meas_res.Jitter_sd += Result_tcp->jitter * Result_tcp->arv_pkt_cnt;
+							meas_res.OWD_sd += Result_tcp->aver_owd * Result_tcp->arv_pkt_cnt;
 							printf("========================ABW========================\n");
 							printf("Iter %d:\n", iternum + 1);
 							printf("Loss rate: %f\n", Result_tcp->loss_rate);
@@ -241,6 +293,11 @@ int main(int argc, char **argv)
 					snprintf(sendline_tcp, sizeof(sendline_tcp), MODE2_END);
 					Write(sockfd_tcp, sendline_tcp, strlen(sendline_tcp));
 					Close(sockfd_udp);
+					meas_res.Jitter_sd = meas_res.Jitter_sd / tot_pkt_arv;
+					meas_res.OWD_sd = meas_res.OWD_sd / tot_pkt_arv;
+					meas_res.LossRate_sd = (float)(tot_pkt_snd - tot_pkt_arv) / (float)tot_pkt_snd;
+					meas_res.ABW_sd = final_res;
+					insert_mode2(task_name, src_ip, serv_ip, meas_res);
 				}
 			}
 		}

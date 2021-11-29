@@ -95,10 +95,6 @@ int query(char *DB_name, char *table_name, char *SIP, char *DIP, char *col_name,
    char *zErrMsg = 0;
    int rc;
    char sql[256] = "SELECT ";
-   char limit_str[10];
-   char mode_str[5];
-   snprintf(limit_str, sizeof(limit_str),"%d",limit); 
-   snprintf(mode_str, sizeof(mode_str),"%d",mode); 
    const char* data = "Callback function called";
 
    if(limit > MAX_LIMIT){
@@ -114,21 +110,8 @@ int query(char *DB_name, char *table_name, char *SIP, char *DIP, char *col_name,
    }
 
    /* Create SQL statement */
-   strcat(sql, col_name);
-   strcat(sql, " FROM ");
-   strcat(sql, table_name);
-   strcat(sql, " WHERE Source_IP=\'");
-   strcat(sql, SIP);
-   strcat(sql, "\' AND Dest_IP=\'");
-   strcat(sql, DIP);
-   strcat(sql, "\' AND mode=");
-   strcat(sql, mode_str);
-   strcat(sql, " AND ");
-   strcat(sql, col_name);
-   strcat(sql, " IS NOT NULL ");
-   strcat(sql, "ORDER BY Time_stamp DESC LIMIT ");
-   strcat(sql, limit_str);
-   strcat(sql, ";");
+   snprintf(sql, sizeof(sql),"SELECT %s FROM %s WHERE Source_IP=\'%s\' AND Dest_IP=\'%s\' AND mode=%d AND %s IS NOT NULL ORDER BY Time_stamp DESC LIMIT %d;",\
+      col_name, table_name, SIP, DIP, mode, col_name, limit); 
    printf("%s\n",sql);
 
 
@@ -184,38 +167,13 @@ float get_max_AB(char * src_IP, char * dst_IP){
     }
     return max_AB;
 }
-
-int insert_mode2(char * task_name, long time_stamp, char * src_IP, char * dst_IP, int owd_sd, float Jitter_sd, float LossRate_sd, float ABW_sd){
-   char insert_sql[256] = "INSERT INTO ";
-   strcat(insert_sql, TABLE_NAME);
-   strcat(insert_sql, " VALUES( NULL , \'");
-   strcat(insert_sql, task_name);
-   strcat(insert_sql, "\', ");
-   char time_stamp_str[20];
-   snprintf(time_stamp_str, sizeof(time_stamp_str),"%ld", time_stamp);
-   strcat(insert_sql, time_stamp_str);
-   strcat(insert_sql, ", \'");
-   strcat(insert_sql, src_IP);
-   strcat(insert_sql, "\', \'");
-   strcat(insert_sql, dst_IP);
-   strcat(insert_sql, "\', 2, ");
-   char owd_sd_str[10];
-   snprintf(owd_sd_str, sizeof(owd_sd_str),"%d", owd_sd);
-   strcat(insert_sql, owd_sd_str);
-   strcat(insert_sql, ", NULL, NULL, ");
-   char jitter_sd_str[16];
-   snprintf(jitter_sd_str, sizeof(jitter_sd_str),"%.3f", Jitter_sd);
-   strcat(insert_sql, jitter_sd_str);
-   strcat(insert_sql, ", NULL, NULL, ");
-   char lossrate_sd_str[12];
-   snprintf(lossrate_sd_str, sizeof(lossrate_sd_str),"%.9f", LossRate_sd);
-   strcat(insert_sql, lossrate_sd_str);
-   strcat(insert_sql, ", NULL, NULL, ");
-   char abw_sd_str[24];
-   snprintf(abw_sd_str, sizeof(abw_sd_str),"%.3f", ABW_sd);
-   strcat(insert_sql, abw_sd_str);
-   strcat(insert_sql, ", NULL);");
-   //printf("%s\n", insert_sql);
+//int owd_sd, float Jitter_sd, float LossRate_sd, float ABW_sd
+int insert_mode2(char * task_name, char * src_IP, char * dst_IP, struct Measurement result){
+   char insert_sql[256];
+   snprintf(insert_sql, sizeof(insert_sql),"INSERT INTO %s VALUES(NULL, \'%s\', %ld, \'%s\', \'%s\', %d, %d, NULL, NULL, %.3f, NULL, NULL, %.6f, NULL, NULL, %3f, NULL);", \
+      TABLE_NAME, task_name, result.time_stamp, src_IP, dst_IP, result.mode, result.OWD_sd,\
+      result.Jitter_sd, result.LossRate_sd, result.ABW_sd);
+   printf("%s\n", insert_sql);
    insert(DATA_BASE, insert_sql);
    return 0;
 }
@@ -223,39 +181,10 @@ int insert_mode2(char * task_name, long time_stamp, char * src_IP, char * dst_IP
 int insert_mode1(char * task_name, char * src_IP, char * dst_IP, struct Measurement result){
    char insert_sql[256] = "INSERT INTO ";
    //char *sql1 = "INSERT INTO PerfRecords VALUES( NULL , 'Test1', 1635825644469669 , '8.8.8.8' , '1.1.1.1', 2,101010,NULL, 202020, 456.5, NULL, 890.6, 0.01, NULL, 0.02, 10000000012.0,  NULL);" ;
-   snprintf(insert_sql, sizeof(insert_sql),"INSERT INTO %s VALUES(NULL, \'%s\', %ld, \'%s\'", \
-      TABLE_NAME, task_name, result.time_stamp, src_IP, );
-   strcat(insert_sql, TABLE_NAME);
-   strcat(insert_sql, " VALUES( NULL , \'");
-   strcat(insert_sql, task_name);
-   strcat(insert_sql, "\', ");
-   char time_stamp_str[20];
-   snprintf(time_stamp_str, sizeof(time_stamp_str),"%ld", result.time_stamp);
-   strcat(insert_sql, time_stamp_str);
-   strcat(insert_sql, ", \'");
-   strcat(insert_sql, src_IP);
-   strcat(insert_sql, "\', \'");
-   strcat(insert_sql, dst_IP);
-   strcat(insert_sql, "\', 2, ");
-   char owd_sd_str[10], owd_ds_str;
-   snprintf(owd_sd_str, sizeof(owd_sd_str),"%d", result.OWD_sd);
-   strcat(insert_sql, owd_sd_str);
-
-   strcat(insert_sql, ", NULL, NULL, ");
-   char jitter_sd_str[16];
-   snprintf(jitter_sd_str, sizeof(jitter_sd_str),"%.3f", Jitter_sd);
-   strcat(insert_sql, jitter_sd_str);
-   strcat(insert_sql, ", NULL, NULL, ");
-   char lossrate_sd_str[12];
-   snprintf(lossrate_sd_str, sizeof(lossrate_sd_str),"%.9f", LossRate_sd);
-   strcat(insert_sql, lossrate_sd_str);
-   strcat(insert_sql, ", NULL, NULL, ");
-   char abw_sd_str[24];
-   snprintf(abw_sd_str, sizeof(abw_sd_str),"%.3f", ABW_sd);
-   strcat(insert_sql, abw_sd_str);
-   strcat(insert_sql, ", NULL);");
-   //printf("%s\n", insert_sql);
+   snprintf(insert_sql, sizeof(insert_sql),"INSERT INTO %s VALUES(NULL, \'%s\', %ld, \'%s\', \'%s\', %d, %d, %d, %d, %.3f, %.3f, %.3f, %.6f, %.6f, %.6f, NULL, NULL);", \
+      TABLE_NAME, task_name, result.time_stamp, src_IP, dst_IP, result.mode, result.OWD_sd, result.OWD_ds, result.RTT,\
+      result.Jitter_sd, result.Jitter_ds, result.Jitter_rtt, result.LossRate_sd, result.LossRate_ds, result.LossRate_rtt);
+   printf("%s\n", insert_sql);
    insert(DATA_BASE, insert_sql);
-   return 0;
    return 0;
 }

@@ -127,21 +127,32 @@ int main(int argc, char **argv)
 								if((n_tcp = Read(connfd, buff_tcp, MAXLINE)) > 0){
 									struct Mode2_Send_Meta *Sendmeta_tcp = buff_tcp;
 									duration = Sendmeta_tcp->duration;
+									long owd_sum = 0;
 									int pkt_num_send = Sendmeta_tcp->pkt_num_send;
 									int psize = Sendmeta_tcp->psize;
 									int i;
 									long min_rcv_time = OWDS[1].send_time + OWDS[1].OWD;
 									long max_rcv_time = OWDS[pkt_cnt].send_time + OWDS[pkt_cnt].OWD;
 									int pkt_num_rcv_in_duration = 0;
+									struct Mode2_Result *Result_tcp = buff_tcp;
+									Result_tcp->jitter = 0.0;
+									if(pkt_cnt > 1){
+										Result_tcp->jitter = abs(OWDS[2].OWD - OWDS[1].OWD);
+									}
 									for(i=1; i<pkt_cnt+1; i++){
+										owd_sum += OWDS[i].OWD;
 										if(OWDS[i].send_time + (long)OWDS[i].OWD - min_rcv_time <= duration){
 											pkt_num_rcv_in_duration ++;
 										}
+										if(i>2){
+											Result_tcp->jitter = Result_tcp->jitter + ((abs(OWDS[i].OWD - OWDS[i-1].OWD)) - Result_tcp->jitter)/16.0;
+										}
 									}
-									struct Mode2_Result *Result_tcp = buff_tcp;
+									Result_tcp->arv_pkt_cnt = pkt_cnt;
 									Result_tcp->loss_rate = (float)(pkt_num_send - pkt_cnt)/pkt_num_send;
 									Result_tcp->rate1 = (float)pkt_cnt*psize/(max_rcv_time-min_rcv_time)*1000000*8;
 									Result_tcp->rate2 = (float)pkt_num_rcv_in_duration*psize/duration*1000000*8;
+									Result_tcp->aver_owd = (int)(owd_sum / pkt_cnt);
 									Write(connfd, buff_tcp, sizeof(struct Mode2_Result));
 								}
 								/*us_sleep(duration + RTT + 2000);
