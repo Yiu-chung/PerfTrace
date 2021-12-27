@@ -89,7 +89,7 @@ int main(int argc, char **argv)
 	char *m_val = "1", *c_val = "10", *i_val = "1000us", *l_val = "0", *serv_ip = "0.0.0.0";
 	char *d_val = DURATION, *r_val = "-1";  //ABM mode
 	if (argc < 3){
-		err_quit("usage: a.out -s <IPaddress>");
+		err_quit("usage: ./perftrace_cli -s <IPaddress>");
 	}else{
 		int opt;
 		char *optstring = "s:m:c:i:l:d:r:h:n:";
@@ -209,6 +209,7 @@ int main(int argc, char **argv)
 					double rcv_rate = 0;
 					int tot_pkt_snd = 0;
 					int tot_pkt_arv = 0;
+					long OWD_sd_sum = 0;
 					while(iternum < MAXITER){
 						printf("rate=%f, duration=%d, pkt_num_send=%d, psize=%d, step=%d\n", rate, duration, pkt_num_send, psize, step);
 						if(pkt_num_send > MAXPKT2) err_quit("error: the number of probe packets shouldn't be bigger than 10240 in ABM mode");
@@ -228,7 +229,7 @@ int main(int argc, char **argv)
 							struct Mode2_Result *Result_tcp = rcvline_tcp;
 							tot_pkt_arv += Result_tcp->arv_pkt_cnt;
 							meas_res.Jitter_sd += Result_tcp->jitter * Result_tcp->arv_pkt_cnt;
-							meas_res.OWD_sd += Result_tcp->aver_owd * Result_tcp->arv_pkt_cnt;
+							OWD_sd_sum += Result_tcp->aver_owd * Result_tcp->arv_pkt_cnt;
 							printf("========================ABW========================\n");
 							printf("Iter %d:\n", iternum + 1);
 							printf("Loss rate: %f\n", Result_tcp->loss_rate);
@@ -295,7 +296,7 @@ int main(int argc, char **argv)
 					Write(sockfd_tcp, sendline_tcp, strlen(sendline_tcp));
 					Close(sockfd_udp);
 					meas_res.Jitter_sd = meas_res.Jitter_sd / tot_pkt_arv;
-					meas_res.OWD_sd = meas_res.OWD_sd / tot_pkt_arv;
+					meas_res.OWD_sd = OWD_sd_sum / tot_pkt_arv;
 					meas_res.LossRate_sd = (float)(tot_pkt_snd - tot_pkt_arv) / (float)tot_pkt_snd;
 					meas_res.ABW_sd = final_res;
 					insert_mode2(task_name, src_ip, serv_ip, meas_res);
