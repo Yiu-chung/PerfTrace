@@ -4,7 +4,7 @@ void us_sleep(int us)
 {
 	struct timeval ST;
 	ST.tv_sec    = us / 1000000;
-	ST.tv_usec   = us;
+	ST.tv_usec   = us % 1000000;
 	select(0, NULL, NULL, NULL, &ST);
 }
 

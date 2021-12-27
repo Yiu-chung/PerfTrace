@@ -106,7 +106,7 @@ int main(int argc, char **argv)
 						printf("I'm OK. Please send packet\n");
 						snprintf(buff_tcp, sizeof(buff_tcp), "I'm OK. Please send packet\n");
 						Write(connfd, buff_tcp, strlen(buff_tcp));
-						us_sleep(duration + RTT + 2000);
+						us_sleep(duration + RTT + 100000);
 						// Kill the sending thread and receiving thread
 						pthread_cancel(response1_t);
 

@@ -41,7 +41,8 @@ void * send_pkt(void * send_sd){
 			duration = (int)(cur_time-start_time);
 			break;  // 0.1ms overtime, no longer send
 		}
-		wait_time = (int)(duration * i/(pkt_num_send - 1)) - (int)(cur_time - start_time);
+		if(pkt_num_send>1) wait_time = (int)(duration * i/(pkt_num_send - 1)) - (int)(cur_time - start_time);
+		else wait_time = -1;
 		if (wait_time > 0) us_sleep(wait_time);
 		gettimeofday(&tv, NULL);
 		send_time = tv.tv_sec * 1000000 + tv.tv_usec;
@@ -75,9 +76,6 @@ void * rcv_pkt(void * rcv_sd){
 
 int main(int argc, char **argv)
 {
-	struct timeval          tv_tmp;
-	gettimeofday(&tv_tmp, NULL);
-    printf("start_time: %ld\n",tv_tmp.tv_sec * 1000000 + tv_tmp.tv_usec);
 	int					sockfd_tcp, sockfd_udp, n;
 	struct sockaddr_in	servaddr;
 	struct timeval		tv_id, tv;
@@ -145,7 +143,7 @@ int main(int argc, char **argv)
 			pkt_num_send = atoi(c_val);
 			duration = duration_atoi(d_val);
 			meas_mode = atoi(m_val);
-			if(meas_mode==1) duration = duration_atoi(i_val)*(pkt_num_send - 1);
+			if(meas_mode==1) duration = (int)duration_atoi(i_val)*(pkt_num_send - 1);
 			psize = atoi(l_val);
 			strcpy(meas_type, "measure");
 			
@@ -187,7 +185,6 @@ int main(int argc, char **argv)
 					// Kill the sending thread and receiving thread
 					pthread_cancel(send_t);
 					pthread_cancel(rcv_t);
-
 					Close(sockfd_udp);
 					printf("end udp.\n");
 					//print_raw_data(raw_res1, pkt_num_send);
@@ -198,8 +195,6 @@ int main(int argc, char **argv)
 					printf("===============================================\n");
 					loss_rate_calc(raw_res1, pkt_num_send, pkt_num_send_arrive[0], &meas_res);
 					printf("===============================================\n");
-					gettimeofday(&tv_tmp, NULL);
-        			printf("end_time: %ld\n",tv_tmp.tv_sec * 1000000 + tv_tmp.tv_usec);
 					insert_mode1(task_name, src_ip, serv_ip, meas_res);
 				}else{
 					int iternum = 0;
