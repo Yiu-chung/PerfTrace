@@ -75,6 +75,9 @@ void * rcv_pkt(void * rcv_sd){
 
 int main(int argc, char **argv)
 {
+	struct timeval          tv_tmp;
+	gettimeofday(&tv_tmp, NULL);
+        printf("start_time: %lf\n",tv_tmp.tv_sec * 1000000 + tv_tmp.tv_usec);
 	int					sockfd_tcp, sockfd_udp, n;
 	struct sockaddr_in	servaddr;
 	struct timeval		tv_id, tv;
@@ -195,6 +198,8 @@ int main(int argc, char **argv)
 					printf("===============================================\n");
 					loss_rate_calc(raw_res1, pkt_num_send, pkt_num_send_arrive[0], &meas_res);
 					printf("===============================================\n");
+					gettimeofday(&tv_tmp, NULL);
+        				printf("end_time: %lf\n",tv_tmp.tv_sec * 1000000 + tv_tmp.tv_usec);
 					insert_mode1(task_name, src_ip, serv_ip, meas_res);
 				}else{
 					int iternum = 0;
