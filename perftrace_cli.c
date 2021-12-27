@@ -142,6 +142,7 @@ int main(int argc, char **argv)
 			pkt_num_send = atoi(c_val);
 			duration = duration_atoi(d_val);
 			meas_mode = atoi(m_val);
+			if(meas_mode==1) duration = duration_atoi(i_val)*(pkt_num_send - 1);
 			psize = atoi(l_val);
 			strcpy(meas_type, "measure");
 			
