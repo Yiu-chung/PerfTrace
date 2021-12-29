@@ -285,7 +285,7 @@ int main(int argc, char **argv)
 						r2 = mid_res[3];
 						printf("Vsnd1=%f\tVrcv1=%f\tVsnd2=%f\tVrcv2=%f\n", s1,r1,s2,r2);
 						if(r1<=s1 && r2<=s2){
-							if (s2-r2 < s1 -r1) printf("final result: %fbps.\n",final_res = (s1*r2*(r1+s2)-r1*s2*(r2+s1))/(r2*s1-s2*r1));
+							if (s2-r2 < s1 -r1) printf("final result: %fbps.\n",final_res = max(r2-s2+r2, (s1*r2*(r1+s2)-r1*s2*(r2+s1))/(r2*s1-s2*r1)));
 							else printf("final result: %fbps.\n", final_res = r2);
 						}else printf("final result: %fbps.\n", final_res = min(r2,min(s1,r1)) );
 					}else{
