@@ -14,7 +14,6 @@ struct sockaddr_storage	cliaddr_udp;
 char				buff_tcp[MAXLINE], buff_udp[MAXLINE];
 struct OWD_Record		OWDS[MAXPKT2+1];
 
-
 void * response1(void * send_sd){
 	struct Probe_Pkt * probe_pkt = buff_udp;
 	struct Reply_Pkt * reply_pkt = buff_udp;
