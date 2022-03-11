@@ -195,6 +195,7 @@ int main(int argc, char **argv)
 			}
 			exit(0);
 		}
+		signal(SIGCHLD, SIG_IGN);
 		Close(connfd);			/* parent closes connected socket */
 	}
 }

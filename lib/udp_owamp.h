@@ -20,6 +20,7 @@
 #include	<sys/un.h>
 #include	<limits.h>
 #include	<sys/mman.h>    /* for mmap */
+#include	<signal.h>
 
 #define MAXLINE	1600
 #define MAXPSIZE 1392
