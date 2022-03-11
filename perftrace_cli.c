@@ -17,11 +17,28 @@ double rate;   // sending rate (bps)
 int duration;  // mesurement duration (us)
 int RTT; // (us)
 char meas_type[10];  // measure or test in mode2
+char database_path[PATH_LEN];
 
 /* struct Raw_Res1 for mode1: raw data obtained by measurement */
 struct Raw_Res1 raw_res1[MAXPKT1+1];
 /* struct Raw_Res2 for mode2 */
 struct Raw_Res2 raw_res2[MAXPKT2+1];
+
+int get_database_path(char * database_path, int path_len){
+    int count;
+    count = readlink( "/proc/self/exe", database_path, path_len);
+    if ( count < 0 || count >= path_len){ 
+		return 1;
+	}
+    else{
+		char *lastslash;
+		lastslash = strrchr(database_path, '/');
+		lastslash[1] = '\0';
+		strcat(database_path,DATA_BASE);
+        return 0;
+    }
+}
+
 
 /* Send probe packet */
 void * send_pkt(void * send_sd){
@@ -76,13 +93,19 @@ void * rcv_pkt(void * rcv_sd){
 
 int main(int argc, char **argv)
 {
+	int path_code = get_database_path(database_path, PATH_LEN);
+	if(path_code == 1){
+		err_quit("can't get the absolute path to the database");
+	}
+
+	printf("%s\n", database_path);
 	int					sockfd_tcp, sockfd_udp, n;
 	struct sockaddr_in	servaddr;
 	struct timeval		tv_id, tv;
 	struct Measurement	meas_res;
 	memset(&meas_res, 0, sizeof(meas_res));
 	/* create sqlite table */
-	if(table_is_exist(DATA_BASE, TABLE_NAME) == 0) create_table(DATA_BASE, create_sql);
+	if(table_is_exist(database_path, TABLE_NAME) == 0) create_table(database_path, create_sql);
 	pkt_num_send = 10;
 	char *src_ip = "0.0.0.0";
 	char *task_name = "test";

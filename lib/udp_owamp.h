@@ -35,6 +35,7 @@
 #define LOSS_RATE_THRESHOLD 0.1
 #define TCP_PORT 19999
 #define UDP_PORT_STR "19999"
+#define PATH_LEN 128
 
 #define	SA	struct sockaddr
 
@@ -46,8 +47,9 @@ const char * DENY = "deny";
 const char * MODE2_MEASURE = "measure";
 const char * MODE2_TEST = "test";
 const char * MODE2_END = "end";
-const char * DATA_BASE = "./data/perftrace.db";
+const char * DATA_BASE = "data/perftrace.db";
 const char * TABLE_NAME = "PerfRecords";
+const char * PATH_FAILED = "PATH_FAILED";
 const char * create_sql = "CREATE TABLE PerfRecords(    \
             ID INTEGER PRIMARY KEY AUTOINCREMENT, \
             Task_Name VARCHAR(50),      \

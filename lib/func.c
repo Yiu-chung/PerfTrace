@@ -72,3 +72,4 @@ int construct_send_args(double rate, int *duration, int *pkt_num_send, int *psiz
     *pkt_num_send = tot_size / (*psize);
     return 0;
 }
+
