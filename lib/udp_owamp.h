@@ -76,6 +76,7 @@ struct Task_Meta
 	long ID;
 	int pkt_num;
 	int duration; // unit: us
+	int interval; // unit: us
 	int task_mode; // 1-basic; 2-ABM.
 };
 

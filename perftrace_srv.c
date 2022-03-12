@@ -92,10 +92,17 @@ int main(int argc, char **argv)
 				if ((n_tcp = Read(connfd, buff_tcp, MAXLINE)) > 0){
 					gettimeofday(&tv2, NULL);
 					RTT = (int)((tv2.tv_sec-tv1.tv_sec)*1000000 + tv2.tv_usec-tv1.tv_usec);
-					printf("RTT=%d\n", RTT);
 					struct Task_Meta *	task_metadata = buff_tcp;
 					int duration = task_metadata->duration;
-					printf("ID=%ld\tpkt_num=%d\tduration=%d\tmode=%d\n", task_metadata->ID, task_metadata->pkt_num, task_metadata->duration, task_metadata->task_mode);
+					printf("Task Info:\n");
+					if(task_metadata->task_mode==1){
+						printf("ID=%ld\tmode=%d\tRTT=%dus\tpkt_num=%d\tinterval=%dus\n", task_metadata->ID, task_metadata->task_mode, RTT, task_metadata->pkt_num, task_metadata->interval);
+					}else if(task_metadata->task_mode==2){
+						printf("ID=%ld\tmode=%d\tRTT=%dus\tduration=%dus\n", task_metadata->ID, task_metadata->task_mode, RTT, task_metadata->duration);
+					}else{
+						printf("ID=%ld\tmode=%d\tRTT=%dus\n", task_metadata->ID, task_metadata->task_mode, RTT);
+					}
+					printf("\n");
 					RAND_ID = task_metadata->ID;
 					sockfd_udp = Udp_server_reuseaddr(NULL, "19999", NULL);
 					int nRecvBuf=1024*1024; //set 32KB rcv buff
@@ -103,7 +110,7 @@ int main(int argc, char **argv)
 					if(task_metadata->task_mode == 1){
 						pthread_t response1_t;
 						pthread_create(&response1_t, NULL, response1, &sockfd_udp);
-						printf("I'm OK. Please send packet\n");
+						//printf("I'm OK. Please send packet\n");
 						snprintf(buff_tcp, sizeof(buff_tcp), "I'm OK. Please send packet\n");
 						Write(connfd, buff_tcp, strlen(buff_tcp));
 						us_sleep(duration + RTT + 100000);
@@ -117,7 +124,7 @@ int main(int argc, char **argv)
 					}else{
 						pthread_t response2_t;
 						pthread_create(&response2_t, NULL, response2, &sockfd_udp);
-						printf("I'm OK. Please send packet\n");
+						//printf("I'm OK. Please send packet\n");
 						snprintf(buff_tcp, sizeof(buff_tcp), "I'm OK. Please send packet\n");
 						Write(connfd, buff_tcp, strlen(buff_tcp));
 						while((n_tcp = Read(connfd, buff_tcp, MAXLINE)) > 0){

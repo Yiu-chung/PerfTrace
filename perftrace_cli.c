@@ -173,6 +173,7 @@ int main(int argc, char **argv)
 			struct Task_Meta *	task_metadata = sendline_tcp;
 			task_metadata->ID = RAND_ID;
 			task_metadata->duration = duration;
+			task_metadata->interval = (int)duration_atoi(i_val);
 			task_metadata->pkt_num = pkt_num_send;
 			task_metadata->task_mode = meas_mode;
 			int RTT;
