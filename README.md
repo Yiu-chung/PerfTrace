@@ -2,41 +2,45 @@
 A lightweight network performance measurement tool.
 
 # Obtaining
-git clone https://github.com/LiuNotTwo/udp_owamp.git
+git clone git@github.com:LiuNotTwo/PerfTrace.git
 
 # Building
-cd udp_owamp; make
+cd PerfTrace; make
 
 # Using
 ### server
-./udp_owamp_server 0.0.0.0 19999 或者 ./udp_owamp_server 19999
+./perftrace_srv
 
-注意，客户端与服务器端通过udp通信，如果服务器端防火墙开启，udp包可能会被过滤。
+! Note that the client communicates with the server via UDP. If the server-side firewall is on, UDP packets may be filtered.
 
-解决方法1. 关闭服务器端防火墙；
+Solution 1: Disable the server-side firewall;
 
-解决方法2. 开放相应端口：
-
+Solution 2: Open the specified UDP port (19999).
 
 &emsp;cent-os$ firewall-cmd --permanent --zone=public --add-port=19999/udp
-
 
 &emsp;cent-os$ firewall-cmd --reload
     
 ### client
-##### mode1
 
-./udp_owamp_client server_addr 19999 或者 ./udp_owamp_server server_addr 19999 -c 10 -i 10
+##### mode1 (Basic Mode)
 
--c:指定发包数量，默认为10
+./perftrace_cli -s server_ip -c 10 -i 10ms -m 1
 
--i:指定发包间隔，默认为100ms
+-c: Specify the number of packets to be sent, default is 10;
 
-##### mode2 测带宽模式
+-i: Specify the packet sending interval, the default is 1ms; 
 
-./udp_owamp_client server_addr 19999 -b true
+-m: Specify the measurement mode, the default is 1 (Basic Mode).
 
-注：带宽模式每次需消耗较多流量（每次0.1MB），对系统有较大入侵性。当前带宽模式测得的带宽值只能反映相对大小，不能代表确切的可用带宽值。
+##### mode2 (AB Mode)
+
+./perftrace_cli -s server_ip -m 2
+
 
 # Output Example
-![image](https://github.com/LiuNotTwo/udp_owamp/blob/main/example/figs/output_example.PNG)
+##### mode1 (Basic Mode)
+![image](https://github.com/LiuNotTwo/PerfTrace/blob/main/example/figs/basic_mode.PNG)
+
+##### mode2 (AB Mode)
+![image](https://github.com/LiuNotTwo/PerfTrace/blob/main/example/figs/AB_mode.PNG)
