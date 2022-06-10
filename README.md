@@ -2,14 +2,17 @@
 A lightweight network performance measurement tool.
 
 # Obtaining
-git clone git@github.com:LiuNotTwo/PerfTrace.git
+`git clone git@github.com:LiuNotTwo/PerfTrace.git`
 
 # Building
-cd PerfTrace; make
+```
+cd PerfTrace
+make
+```
 
 # Using
 ### server
-```./perftrace_srv```
+`./perftrace_srv`
 
 ! Note that the client communicates with the server via UDP. If the server-side firewall is on, UDP packets may be filtered.
 
@@ -25,7 +28,7 @@ Solution 2: Open the specified UDP port (19999).
 
 ##### mode1 (Basic Mode)
 
-```./perftrace_cli -s server_ip -c 10 -i 10ms -m 1```
+`./perftrace_cli -s server_ip -c 10 -i 10ms -m 1`
 
 -c: Specify the number of packets to be sent, default is 10;
 
@@ -35,7 +38,7 @@ Solution 2: Open the specified UDP port (19999).
 
 ##### mode2 (AB Mode)
 
-```./perftrace_cli -s server_ip -m 2```
+`./perftrace_cli -s server_ip -m 2`
 
 
 # Output Example
