@@ -20,9 +20,9 @@ Solution 1: Disable the server-side firewall;
 
 Solution 2: Open the specified UDP port (19999).
 
-&emsp;cent-os$ firewall-cmd --permanent --zone=public --add-port=19999/udp
+&emsp;`cent-os$ firewall-cmd --permanent --zone=public --add-port=19999/udp`
 
-&emsp;cent-os$ firewall-cmd --reload
+&emsp;`cent-os$ firewall-cmd --reload`
     
 ### client
 
