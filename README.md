@@ -2,7 +2,7 @@
 A lightweight network performance measurement tool.
 
 # Obtaining
-`git clone git@github.com:LiuNotTwo/PerfTrace.git`
+`git clone https://github.com/LiuNotTwo/PerfTrace.git`
 
 # Building
 ```
