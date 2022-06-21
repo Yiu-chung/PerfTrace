@@ -220,7 +220,7 @@ int main(int argc, char **argv)
 					loss_rate_calc(raw_res1, pkt_num_send, pkt_num_send_arrive[0], &meas_res);
 					printf("===============================================\n");
 					insert_mode1(task_name, src_ip, serv_ip, meas_res);
-				}else{
+				}else if(meas_mode == 1){
 					int iternum = 0;
 					rate = rate_atof(r_val);
 					send_rate_init(&rate, src_ip,serv_ip);
@@ -324,7 +324,42 @@ int main(int argc, char **argv)
 					meas_res.LossRate_sd = (float)(tot_pkt_snd - tot_pkt_arv) / (float)tot_pkt_snd;
 					meas_res.ABW_sd = final_res;
 					insert_mode2(task_name, src_ip, serv_ip, meas_res);
+				}else{
+					int iternum = 0;
+					rate = 1000000000000.0;//1Tbps, back-to-back measure
+					int ds[] = {100,200,500,1000,2000,5000,10000};
+					int ds_size = sizeof(ds)/sizeof(ds[0]);
+					for(int i = 0; i < ds_size; i++){
+						duration = ds[i];
+						construct_send_args(rate, &duration, &pkt_num_send, &psize);
+						snprintf(sendline_tcp, sizeof(sendline_tcp), MODE2_MEASURE);
+						Write(sockfd_tcp, sendline_tcp, strlen(sendline_tcp));
+						us_sleep(RTT/2 + 1000); // wait
+						memset(raw_res2, 0, sizeof(raw_res2));
+						send_pkt(&sockfd_udp);
+						us_sleep(10000); // wait
+						struct Mode2_Send_Meta *Sendmeta_tcp = sendline_tcp;
+						Sendmeta_tcp->duration = duration;
+						Sendmeta_tcp->pkt_num_send = pkt_num_send;
+						Sendmeta_tcp->psize = max(psize, sizeof(struct Probe_Pkt)+28);
+						Write(sockfd_tcp, sendline_tcp, sizeof(struct Mode2_Send_Meta));
+						if( (n = read(sockfd_tcp, rcvline_tcp, MAXLINE)) > 0 ){
+							struct Mode2_Result *Result_tcp = rcvline_tcp;
+							meas_res.Jitter_sd += Result_tcp->jitter * Result_tcp->arv_pkt_cnt;
+							printf("========================Back to Back========================\n");
+							printf("Iter %d:\n", i + 1);
+							printf("duration=%dus, pkt_num_send=%d, psize=%d\n", duration, pkt_num_send, psize);
+							printf("Loss rate: %f\n", Result_tcp->loss_rate);
+							printf("Specified sending rate: %fbps\n", rate);
+							double actual_rate = (double)pkt_num_send*psize/duration*1000000*8;
+							printf("Actual sending rate: %fbps\n", actual_rate);
+							printf("Receiving rate of all packets: %fbps\n",Result_tcp->rate1);
+							printf("Receiving rate in duration: %fbps\n",Result_tcp->rate2);
+						}
+
+					}
 				}
+					
 			}
 		}
 	}
