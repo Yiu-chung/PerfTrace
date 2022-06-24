@@ -11,6 +11,7 @@ make
 ```
 
 # Rebuilding
+If the existing executable file (*perftrace_srv* or *perftrace_cli*) does not work on your machine, recompile it.
 ```
 make clean
 make
