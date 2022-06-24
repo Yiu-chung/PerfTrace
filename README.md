@@ -10,6 +10,12 @@ cd PerfTrace
 make
 ```
 
+# Rebuilding
+```
+make clean
+make
+```
+
 # Using
 ### server
 `./perftrace_srv`
