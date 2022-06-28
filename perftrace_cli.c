@@ -220,7 +220,7 @@ int main(int argc, char **argv)
 					loss_rate_calc(raw_res1, pkt_num_send, pkt_num_send_arrive[0], &meas_res);
 					printf("===============================================\n");
 					insert_mode1(task_name, src_ip, serv_ip, meas_res);
-				}else if(meas_mode == 1){
+				}else if(meas_mode == 2){
 					int iternum = 0;
 					rate = rate_atof(r_val);
 					send_rate_init(&rate, src_ip,serv_ip);
